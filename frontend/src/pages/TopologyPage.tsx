@@ -228,6 +228,17 @@ export default function TopologyPage() {
     }
   }, []);
 
+  // Blast radius for an exact node id (any node type). Ids contain '/' and ':' which the
+  // path endpoint accepts as-is; falls back to the name-based endpoint on older backends.
+  const analyzeBlastRadiusForNode = useCallback(async (node: BackendTopologyNode) => {
+    try {
+      const res = await api.get<BlastRadiusResponse>(`/api/v1/topology/blast-radius/${encodeURI(node.id)}`);
+      setBlastData(res.data);
+    } catch {
+      await handleAnalyzeBlastRadius(node.name);
+    }
+  }, [handleAnalyzeBlastRadius]);
+
   const handleClearBlastRadius = useCallback(() => {
     setBlastData(null);
   }, []);
@@ -366,15 +377,16 @@ export default function TopologyPage() {
     setEdges(layouted.edges);
   }, [rawNodes, rawEdges, direction, blastData, selectedNode, searchQuery, typeFilter, handleAnalyzeBlastRadius, setNodes, setEdges]);
 
-  // Click on node selects it and opens details panel
+  // Click on a node: select it, open its details, and highlight its blast radius
   const onNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
       const match = rawNodes.find((n) => n.id === node.id);
       if (match) {
         setSelectedNode(match);
+        void analyzeBlastRadiusForNode(match);
       }
     },
-    [rawNodes]
+    [rawNodes, analyzeBlastRadiusForNode]
   );
 
   const handleSelectNodeById = useCallback(

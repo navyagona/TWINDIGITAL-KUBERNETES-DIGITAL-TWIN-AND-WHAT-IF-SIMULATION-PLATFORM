@@ -11,6 +11,13 @@
   --color-text-primary: #e6edf3;
   --color-text-secondary: #8b949e;
   --color-text-muted: #484f58;
+  /* Status (state only, always paired with an icon + label) and chart series tokens.
+     Values from the dataviz reference palette, dark steps validated on --color-surface. */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+  --series-1: #3987e5;
+  --chart-grid: #30363d;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -1163,3 +1170,98 @@ a:hover { text-decoration: underline; }
   color: var(--color-text-primary);
 }
 
+
+/* ── Status pills (PASS / WARN / FAIL, UP / DOWN): icon + label carry meaning, color reinforces ── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  white-space: nowrap;
+}
+.status-pill svg { flex-shrink: 0; }
+.status-pill.good svg { color: var(--status-good); }
+.status-pill.warning svg { color: var(--status-warning); }
+.status-pill.critical svg { color: var(--status-critical); }
+.status-pill.good { border-color: color-mix(in srgb, var(--status-good) 45%, var(--color-border)); }
+.status-pill.warning { border-color: color-mix(in srgb, var(--status-warning) 45%, var(--color-border)); }
+.status-pill.critical { border-color: color-mix(in srgb, var(--status-critical) 45%, var(--color-border)); }
+
+/* Row accent for the per-check results table */
+.check-row td:first-child { border-left: 3px solid transparent; }
+.check-row.good td:first-child { border-left-color: var(--status-good); }
+.check-row.warning td:first-child { border-left-color: var(--status-warning); }
+.check-row.critical td:first-child { border-left-color: var(--status-critical); }
+
+/* Service health grid */
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.6rem;
+}
+.health-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+.health-tile .name { font-weight: 600; color: var(--color-text-primary); }
+.health-tile .meta { font-size: 0.7rem; color: var(--color-text-secondary); }
+
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+}
+.live-indicator .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-good);
+}
+
+/* ── Savings bar chart (single series; hover tooltip; table view is the right-sizing table) ── */
+.bar-chart { position: relative; width: 100%; }
+.bar-chart svg { display: block; width: 100%; overflow: visible; }
+.bar-chart .bar { fill: var(--series-1); }
+.bar-chart .bar-hit { fill: transparent; cursor: default; }
+.bar-chart .bar-hit:hover + .bar,
+.bar-chart .bar-group:hover .bar { opacity: 0.85; }
+.bar-chart .axis-label { fill: var(--color-text-secondary); font-size: 11px; }
+.bar-chart .value-label { fill: var(--color-text-primary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.bar-chart .grid-line { stroke: var(--chart-grid); stroke-width: 1; }
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 0.45rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 8px));
+  z-index: 5;
+}
+.chart-tooltip .muted { color: var(--color-text-secondary); }
+
+/* Shared table look (matches the right-sizing table) */
+.table-wrap { overflow-x: auto; }
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
+.table-wrap thead tr { border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); }
+.table-wrap th { padding: 0.6rem 0.5rem; font-weight: 600; }
+.table-wrap td { padding: 0.65rem 0.5rem; vertical-align: top; }
+.table-wrap tbody tr { border-bottom: 1px solid rgba(255,255,255,0.05); }

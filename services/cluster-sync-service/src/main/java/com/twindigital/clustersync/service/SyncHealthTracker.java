@@ -39,6 +39,27 @@ public class SyncHealthTracker {
     private final AtomicReference<Instant> lastEventTime = new AtomicReference<>(Instant.now());
     private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
     private final AtomicReference<String> lastErrorMessage = new AtomicReference<>(null);
+    /** Non-null when no Kubernetes credentials were found; the service runs but does not sync. */
+    private final AtomicReference<String> noClusterReason = new AtomicReference<>(null);
+
+    public static final String STATUS_HEALTHY = "HEALTHY";
+    public static final String STATUS_STALE = "STALE";
+    public static final String STATUS_NO_CLUSTER = "NO_CLUSTER";
+
+    public void markNoCluster(String reason) {
+        this.noClusterReason.set(reason != null ? reason : "no cluster configured");
+        this.connected.set(false);
+        metrics.updateHealthy(false);
+    }
+
+    public boolean isNoCluster() {
+        return noClusterReason.get() != null;
+    }
+
+    private String resolveStatus(boolean healthy) {
+        if (isNoCluster()) return STATUS_NO_CLUSTER;
+        return healthy ? STATUS_HEALTHY : STATUS_STALE;
+    }
 
     private final Map<String, Instant> resourceLastEvent = new ConcurrentHashMap<>();
     private final Map<String, Boolean> resourceSynced = new ConcurrentHashMap<>();
@@ -108,7 +129,7 @@ public class SyncHealthTracker {
         boolean healthy = isHealthy();
         long lag = calculateLagSeconds();
 
-        String status = healthy ? "HEALTHY" : "STALE";
+        String status = resolveStatus(healthy);
 
         String clusterName = properties.getClusterName();
 
@@ -157,7 +178,9 @@ public class SyncHealthTracker {
                 .reconnectAttempts(attempts)
                 .currentBackoffDelaySeconds(currentBackoff)
                 .resourceSyncStatus(summaryMap)
-                .message(connected.get()
+                .message(isNoCluster()
+                        ? "No Kubernetes cluster configured: " + noClusterReason.get() + ". Set KUBECONFIG_BASE64 to enable sync."
+                        : connected.get()
                         ? (healthy ? "Informers active and synchronized with cluster" : "Sync lag exceeded threshold (" + properties.getStaleThresholdSeconds() + "s)")
                         : ("Watch connection disconnected: " + (lastErrorMessage.get() != null ? lastErrorMessage.get() : "Connection dropped")))
                 .build();
@@ -175,7 +198,7 @@ public class SyncHealthTracker {
         String clusterName = properties.getClusterName();
         boolean healthy = isHealthy();
         long lag = calculateLagSeconds();
-        String status = healthy ? "HEALTHY" : "STALE";
+        String status = resolveStatus(healthy);
 
         Map<String, Object> resourceCounts = new HashMap<>();
         resourceCounts.put("nodes", nodeRepository.countByClusterName(clusterName));

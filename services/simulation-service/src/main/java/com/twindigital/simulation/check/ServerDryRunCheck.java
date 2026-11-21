@@ -11,12 +11,14 @@ import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.models.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Slf4j
 @Component
+@Order(60)
 public class ServerDryRunCheck implements SimulationCheck {
 
     @Autowired(required = false)

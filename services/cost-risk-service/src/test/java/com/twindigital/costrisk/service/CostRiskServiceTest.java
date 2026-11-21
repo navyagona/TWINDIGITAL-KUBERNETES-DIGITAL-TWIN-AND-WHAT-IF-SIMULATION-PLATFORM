@@ -3,6 +3,8 @@ package com.twindigital.costrisk.service;
 import com.twindigital.costrisk.client.AwsCostExplorerClient;
 import com.twindigital.costrisk.client.AwsCostExplorerClient.AwsCostData;
 import com.twindigital.costrisk.client.PrometheusClient;
+import com.twindigital.costrisk.client.PrometheusClient.UsageSnapshot;
+import com.twindigital.costrisk.client.PrometheusClient.UsageWindow;
 import com.twindigital.costrisk.entity.CostRiskEntities.*;
 import com.twindigital.costrisk.model.CostRiskDTOs.*;
 import com.twindigital.costrisk.repository.CostRiskRepositories.*;
@@ -65,6 +67,9 @@ class CostRiskServiceTest {
         ReflectionTestUtils.setField(costRiskService, "monthlyHours", 730.0);
         ReflectionTestUtils.setField(costRiskService, "eksControlPlaneHourlyCost", 0.10);
         costRiskService.initMetrics();
+        // Default: Prometheus reachable but empty. Tests that need usage data override this.
+        lenient().when(prometheusClient.queryUsage())
+                .thenReturn(new UsageSnapshot(Map.of(), Map.of(), UsageWindow.NO_DATA));
     }
 
     @Test
@@ -83,8 +88,10 @@ class CostRiskServiceTest {
         when(podRepository.findByClusterName(CLUSTER)).thenReturn(List.of(pod));
 
         // Mock Prometheus p95 usage: actual CPU is only 45m (9% util), memory is only 180Mi (17% util)
-        when(prometheusClient.queryPodCpuUsageP95()).thenReturn(Map.of("billing-service-pod-1", 45.0));
-        when(prometheusClient.queryPodMemoryUsageP95()).thenReturn(Map.of("billing-service-pod-1", 180L * 1024L * 1024L));
+        when(prometheusClient.queryUsage()).thenReturn(new UsageSnapshot(
+                Map.of("billing-service-pod-1", 45.0),
+                Map.of("billing-service-pod-1", 180L * 1024L * 1024L),
+                UsageWindow.P95_7D));
 
         // When
         OverprovisionedReport report = costRiskService.getOverprovisionedReport(CLUSTER);
@@ -122,8 +129,7 @@ class CostRiskServiceTest {
                 .build();
 
         when(podRepository.findByClusterName(CLUSTER)).thenReturn(List.of(pod));
-        when(prometheusClient.queryPodCpuUsageP95()).thenReturn(Collections.emptyMap());
-        when(prometheusClient.queryPodMemoryUsageP95()).thenReturn(Collections.emptyMap());
+        when(prometheusClient.queryUsage()).thenReturn(new UsageSnapshot(Map.of(), Map.of(), UsageWindow.NO_DATA));
 
         OverprovisionedReport report = costRiskService.getOverprovisionedReport(CLUSTER);
 
@@ -210,5 +216,89 @@ class CostRiskServiceTest {
         assertThat(response.getDeltaMonthlyUsd()).isGreaterThan(0.0);
         assertThat(response.getDeltaAnnualUsd()).isCloseTo(response.getDeltaMonthlyUsd() * 12.0, within(0.1));
         assertThat(response.getExplanation()).contains("billing-service");
+    }
+
+    private void stubPriceTable() {
+        when(pricingRepository.findByRegionAndInstanceType("ap-south-1", "t3.medium")).thenReturn(Optional.of(
+                InstancePricingEntity.builder().region("ap-south-1").instanceType("t3.medium")
+                        .onDemandPrice(0.0416).vcpu(2).memoryGib(4.0).build()));
+    }
+
+    @Test
+    @DisplayName("No Prometheus data: real fields stay empty and labelled sample suggestions are returned")
+    void shouldReturnLabelledSampleSuggestionsWithoutPrometheus() {
+        when(podRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+        when(prometheusClient.queryUsage()).thenReturn(new UsageSnapshot(Map.of(), Map.of(), UsageWindow.NOT_CONFIGURED));
+
+        OverprovisionedReport report = costRiskService.getOverprovisionedReport(CLUSTER);
+
+        assertThat(report.isDataAvailable()).isFalse();
+        assertThat(report.getDataSource()).isEqualTo("SAMPLE");
+        assertThat(report.getEvaluatedWindow()).startsWith("SAMPLE DATA").contains("PROMETHEUS_URL");
+        assertThat(report.getOverprovisionedPods()).isEmpty();
+        assertThat(report.getPotentialMonthlySavingsUsd()).isEqualTo(0.0);
+        assertThat(report.getSampleSuggestions()).hasSize(2)
+                .allMatch(p -> p.getExplanation().contains("SAMPLE usage data"));
+        assertThat(meterRegistry.get("twin_overprovisioned_pods").gauge().value()).isEqualTo(0.0);
+    }
+
+    @Test
+    @DisplayName("Instant-value fallback is labelled as such, not as a 7-day p95")
+    void shouldLabelInstantFallbackWindow() {
+        ClusterPodEntity pod = ClusterPodEntity.builder().clusterName(CLUSTER).namespace("twindigital")
+                .name("web-1").ownerName("web").cpuRequests("500m").memoryRequests("1024Mi").build();
+        when(podRepository.findByClusterName(CLUSTER)).thenReturn(List.of(pod));
+        when(prometheusClient.queryUsage()).thenReturn(new UsageSnapshot(
+                Map.of("web-1", 40.0), Map.of(), UsageWindow.INSTANT_FALLBACK));
+
+        OverprovisionedReport report = costRiskService.getOverprovisionedReport(CLUSTER);
+
+        assertThat(report.getDataSource()).isEqualTo("PROMETHEUS");
+        assertThat(report.getEvaluatedWindow()).startsWith("Instant PromQL");
+        assertThat(report.getOverprovisionedPods().get(0).getExplanation()).contains("current instant usage");
+    }
+
+    @Test
+    @DisplayName("estimate-change prices from the ap-south-1 table and takes the baseline from the cluster snapshot")
+    void shouldPriceFromTableWithSnapshotBaseline() {
+        stubPriceTable();
+        ClusterPodEntity pod = ClusterPodEntity.builder().clusterName(CLUSTER).namespace("twindigital")
+                .name("api-5d9f-abc").ownerName("api").cpuRequests("1000m").memoryRequests("2048Mi").build();
+        when(podRepository.findByClusterName(CLUSTER)).thenReturn(List.of(pod));
+        when(deploymentRepository.findByClusterNameAndNamespaceAndName(CLUSTER, "twindigital", "api"))
+                .thenReturn(Optional.of(ClusterDeploymentEntity.builder().name("api").replicas(2).build()));
+
+        // halve CPU on 2 replicas; memory unchanged
+        EstimateChangeResponse r = costRiskService.estimateChangeCost(EstimateChangeRequest.builder()
+                .kind("RESOURCE_CHANGE").target("api").cpuRequest("500m").build());
+
+        // t3.medium $0.0416/hr -> CPU share $0.0104 per core-hour; 2 pods x 0.5 core x 730h = -$7.59
+        assertThat(r.getDeltaMonthlyUsd()).isCloseTo(-7.59, within(0.01));
+        assertThat(r.getPricingSource()).contains("td_instance_pricing ap-south-1 t3.medium");
+        assertThat(r.getBaselineSource()).startsWith("CLUSTER_SNAPSHOT").contains("replicas").contains("cpuRequest");
+    }
+
+    @Test
+    @DisplayName("estimate-change for NODE_REMOVAL saves one node's monthly price")
+    void shouldEstimateNodeRemovalSavings() {
+        stubPriceTable();
+
+        EstimateChangeResponse r = costRiskService.estimateChangeCost(EstimateChangeRequest.builder()
+                .kind("NODE_REMOVAL").target("ip-10-0-2-20.ec2.internal").build());
+
+        assertThat(r.getDeltaMonthlyUsd()).isCloseTo(-30.37, within(0.01)); // 0.0416 x 730
+        assertThat(r.getProposedMonthlyCostUsd()).isEqualTo(0.0);
+    }
+
+    @Test
+    @DisplayName("estimate-change labels made-up inputs when neither the request nor the snapshot has them")
+    void shouldLabelAssumedDefaults() {
+        when(podRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+
+        EstimateChangeResponse r = costRiskService.estimateChangeCost(EstimateChangeRequest.builder()
+                .kind("RESOURCE_CHANGE").target("unknown-app").cpuRequest("300m").build());
+
+        assertThat(r.getBaselineSource()).startsWith("ASSUMED_DEFAULTS").contains("replicas=2");
+        assertThat(r.getPricingSource()).startsWith("DEFAULT_RATE");
     }
 }

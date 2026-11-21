@@ -45,6 +45,7 @@ public class TopologyGraphService {
             dataSource = "SEED";
         } else {
             buildFromDatabase(clusterName, dbNodes, dbPods, dbDeployments, dbServices, nodes, edges);
+            dropDanglingEdges(nodes, edges);
             dataSource = "LIVE";
         }
 
@@ -70,6 +71,7 @@ public class TopologyGraphService {
 
         TopologyResponse topology = getTopology(cluster);
         String cleanTarget = targetServiceName.trim().toLowerCase();
+        // Fuzzy lookup kept for the existing ?target= endpoint the frontend uses.
 
         // Find target node (matching name or ID)
         TopologyNode targetNode = topology.getNodes().stream()
@@ -90,6 +92,31 @@ public class TopologyGraphService {
                     .build();
         }
 
+        return computeBlastRadius(topology, targetNode, cleanTarget);
+    }
+
+    /**
+     * Blast radius for an exact node id (e.g. {@code service:twindigital/gateway}), or a node name
+     * when no id matches (services preferred). Empty when nothing in the graph matches.
+     */
+    public Optional<BlastRadiusResponse> findBlastRadius(String cluster, String nodeId) {
+        if (nodeId == null || nodeId.isBlank()) {
+            throw new IllegalArgumentException("node id is required");
+        }
+        String wanted = nodeId.trim();
+        TopologyResponse topology = getTopology(cluster);
+
+        Optional<TopologyNode> match = topology.getNodes().stream()
+                .filter(n -> n.getId().equalsIgnoreCase(wanted))
+                .findFirst()
+                .or(() -> topology.getNodes().stream()
+                        .filter(n -> n.getName().equalsIgnoreCase(wanted))
+                        .min(Comparator.comparing(n -> "SERVICE".equals(n.getType()) ? 0 : 1)));
+
+        return match.map(node -> computeBlastRadius(topology, node, node.getName().toLowerCase()));
+    }
+
+    private BlastRadiusResponse computeBlastRadius(TopologyResponse topology, TopologyNode targetNode, String cleanTarget) {
         // Build adjacency maps for dependency edges
         // dependency edge: caller (source) -> provider (target)
         // Upstream of T: callers that call T (edges where target == T)
@@ -309,19 +336,25 @@ public class TopologyGraphService {
             }
 
             // Edge: Deployment -> Pod ("manages")
+            // Pods are named <deployment>-<rs-hash>-<suffix>; require the "-" and take the longest
+            // match so deployment "auth" does not claim pods of "auth-service".
             if (p.getOwnerName() != null && !p.getOwnerName().isBlank()) {
+                ClusterDeploymentEntity owner = null;
                 for (ClusterDeploymentEntity d : dbDeployments) {
-                    if (d.getNamespace().equals(p.getNamespace()) && p.getName().startsWith(d.getName())) {
-                        String deployId = "deployment:" + d.getNamespace() + "/" + d.getName();
-                        outEdges.add(TopologyEdge.builder()
-                                .id("e:dep-pod:" + d.getName() + "_" + p.getName())
-                                .source(deployId)
-                                .target(podId)
-                                .type("HIERARCHY")
-                                .label("manages")
-                                .build());
-                        break;
+                    if (d.getNamespace().equals(p.getNamespace())
+                            && p.getName().startsWith(d.getName() + "-")
+                            && (owner == null || d.getName().length() > owner.getName().length())) {
+                        owner = d;
                     }
+                }
+                if (owner != null) {
+                    outEdges.add(TopologyEdge.builder()
+                            .id("e:dep-pod:" + owner.getName() + "_" + p.getName())
+                            .source("deployment:" + owner.getNamespace() + "/" + owner.getName())
+                            .target(podId)
+                            .type("HIERARCHY")
+                            .label("manages")
+                            .build());
                 }
             }
         }
@@ -560,6 +593,20 @@ public class TopologyGraphService {
                 .label(label)
                 .animated(animated)
                 .build();
+    }
+
+    /**
+     * Removes edges whose source or target is not a node in the graph. Annotation, persisted and
+     * built-in TwinDigital dependency edges can name services that don't exist in the synced
+     * cluster; React Flow can't render those and blast radius would traverse phantom nodes.
+     */
+    private void dropDanglingEdges(List<TopologyNode> nodes, List<TopologyEdge> edges) {
+        Set<String> nodeIds = nodes.stream().map(TopologyNode::getId).collect(Collectors.toSet());
+        int before = edges.size();
+        edges.removeIf(e -> !nodeIds.contains(e.getSource()) || !nodeIds.contains(e.getTarget()));
+        if (edges.size() < before) {
+            log.debug("Dropped {} edge(s) referencing nodes not present in the synced cluster", before - edges.size());
+        }
     }
 
     private boolean matchSelector(Map<String, String> selector, Map<String, String> labels) {

@@ -1,15 +1,15 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import SimulationPage from './pages/SimulationPage';
 import CostRiskPage from './pages/CostRiskPage';
-import useAuthStore from './store/authStore';
+import useAuthStore, { isViewerRole } from './store/authStore';
 
 const TopologyPage = lazy(() => import('./pages/TopologyPage'));
 
-function PrivateLayout({ children }) {
+function PrivateLayout({ children }: { children: ReactNode }) {
   const token = useAuthStore((s) => s.token);
   if (!token) return <Navigate to="/login" replace />;
   return (
@@ -20,13 +20,12 @@ function PrivateLayout({ children }) {
   );
 }
 
-function AdminOnlyRoute({ children }) {
+function AdminOnlyRoute({ children }: { children: ReactNode }) {
   const user = useAuthStore((s) => s.user);
-  const isViewer = user?.role?.toUpperCase() === 'VIEWER';
-  if (isViewer) {
+  if (isViewerRole(user)) {
     return <Navigate to="/" replace />;
   }
-  return children;
+  return <>{children}</>;
 }
 
 export default function App() {

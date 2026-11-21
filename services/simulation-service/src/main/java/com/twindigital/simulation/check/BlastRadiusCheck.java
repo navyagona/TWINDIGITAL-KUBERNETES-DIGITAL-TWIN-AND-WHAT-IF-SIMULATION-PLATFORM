@@ -5,11 +5,13 @@ import com.twindigital.simulation.context.SimulationContext.BlastRadiusInfo;
 import com.twindigital.simulation.model.SimulationModels.ChangeSet;
 import com.twindigital.simulation.model.SimulationModels.FindingSeverity;
 import com.twindigital.simulation.model.SimulationModels.SimulationFinding;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
+@Order(50)
 public class BlastRadiusCheck implements SimulationCheck {
 
     @Override

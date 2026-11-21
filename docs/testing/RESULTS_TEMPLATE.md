@@ -51,7 +51,7 @@ This document provides the standard reporting template and evidence tracking log
 | **Auth Service Tests** | 100% passing | **19 / 19 passed (100%)** | **MET** |
 | **Cluster Sync Service Tests** | 100% passing | **25 / 25 passed (100%)** | **MET** |
 | **Topology Service Tests** | 100% passing | **8 / 8 passed (100%)** | **MET** |
-| **Simulation Service Tests** | 100% passing | **24 / 24 passed (100%)** | **MET** |
+| **Simulation Service Tests** | 100% passing | **25 / 25 passed (100%)** | **MET** |
 | **Cost Risk Service Tests** | 100% passing | **15 / 15 passed (100%)** | **MET** |
 | **Frontend TypeScript & Lint** | 0 errors | **0 errors, 3 warnings** | **MET** |
 | **API Gateway p95 Latency** | $< 300\text{ ms}$ | *not yet run* | not yet run |

@@ -1,19 +1,18 @@
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: twindigital-postgres
     environment:
-      POSTGRES_DB: twindigital
+      POSTGRES_DB: ${POSTGRES_DB:-twindigital}
       POSTGRES_USER: ${POSTGRES_USER:-twindigital}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-twindigital_secure_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-twindigital} -d twindigital"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,11 +21,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: twindigital-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD:-twindigital_redis_pass}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    # $$ defers expansion to the container shell, so the password stays out of `docker compose config` output and image metadata.
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes"]
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-twindigital_redis_pass}", "ping"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,10 +44,11 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/twindigital
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-twindigital}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-twindigital}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-twindigital_secure_pass}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SERVER_PORT: 8082
+      KUBECONFIG_BASE64: ${KUBECONFIG_BASE64:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,23 +67,21 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/twindigital
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-twindigital}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-twindigital}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-twindigital_secure_pass}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_BASELINE_VERSION: "0"
       SERVER_PORT: 8081
-      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_key_32_characters_minimum}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-admin}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?Set BOOTSTRAP_ADMIN_PASSWORD in .env}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@twindigital.local}
-      SPRING_DATA_REDIS_URL: redis://:${REDIS_PASSWORD:-twindigital_redis_pass}@redis:6379
+      SPRING_DATA_REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      cluster-sync:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
@@ -95,9 +98,9 @@ services:
     ports:
       - "8083:8083"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/twindigital
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-twindigital}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-twindigital}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-twindigital_secure_pass}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_BASELINE_VERSION: "0"
       SERVER_PORT: 8083
@@ -119,9 +122,9 @@ services:
     ports:
       - "8084:8084"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/twindigital
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-twindigital}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-twindigital}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-twindigital_secure_pass}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_BASELINE_VERSION: "0"
       CLUSTER_SYNC_SERVICE_URL: http://cluster-sync:8082
@@ -152,13 +155,13 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/twindigital
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-twindigital}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-twindigital}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-twindigital_secure_pass}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_BASELINE_VERSION: "0"
       SERVER_PORT: 8085
-      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://localhost:9090}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-}
       AWS_REGION: ${AWS_REGION:-ap-south-1}
     depends_on:
       cluster-sync:
@@ -180,15 +183,16 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_key_32_characters_minimum}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       AUTH_SERVICE_URL: http://auth-service:8081
       CLUSTER_SYNC_SERVICE_URL: http://cluster-sync:8082
       TOPOLOGY_SERVICE_URL: http://topology-service:8083
       COST_RISK_SERVICE_URL: http://cost-risk-service:8085
       SIMULATION_SERVICE_URL: http://simulation:8084
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-twindigital_redis_pass}@redis:6379
+      RATE_LIMIT_MAX_IP: ${RATE_LIMIT_MAX_IP:-60}
+      RATE_LIMIT_MAX_USER: ${RATE_LIMIT_MAX_USER:-120}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379
     depends_on:
       auth-service:
         condition: service_healthy
@@ -228,3 +232,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:

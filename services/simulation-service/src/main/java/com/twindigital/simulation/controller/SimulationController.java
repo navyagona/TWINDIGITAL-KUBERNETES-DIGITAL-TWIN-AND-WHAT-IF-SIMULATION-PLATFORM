@@ -25,7 +25,7 @@ public class SimulationController {
     /**
      * Executes a what-if simulation against real synced cluster state.
      */
-    @PostMapping({"/api/simulations", "/api/v1/simulations", "/api/v1/simulations/run"})
+    @PostMapping({"/api/v1/simulate", "/api/simulations", "/api/v1/simulations", "/api/v1/simulations/run"})
     public ResponseEntity<SimulationResult> runSimulation(
             @RequestBody Map<String, Object> body,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId) {

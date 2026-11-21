@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import useAuthStore from '../store/authStore';
 
 export default function LoginPage() {
@@ -10,7 +11,7 @@ export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -18,7 +19,8 @@ export default function LoginPage() {
       await login(username, password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Check credentials.');
+      const serverMessage = isAxiosError(err) ? (err.response?.data as { error?: string } | undefined)?.error : undefined;
+      setError(serverMessage || 'Login failed. Check credentials.');
     } finally {
       setLoading(false);
     }

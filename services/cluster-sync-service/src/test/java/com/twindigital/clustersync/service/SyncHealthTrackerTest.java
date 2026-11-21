@@ -102,6 +102,31 @@ class SyncHealthTrackerTest {
     }
 
     @Test
+    @DisplayName("NO_CLUSTER status and message when no cluster is configured")
+    void shouldReportNoCluster() {
+        tracker.markNoCluster("no kubeconfig or in-cluster credentials found");
+
+        SyncStatusResponse response = tracker.buildStatusResponse();
+
+        assertEquals("NO_CLUSTER", response.getStatus());
+        assertFalse(response.isConnected());
+        assertTrue(response.getMessage().contains("KUBECONFIG_BASE64"));
+        assertTrue(response.getMessage().contains("no kubeconfig or in-cluster credentials found"));
+    }
+
+    @Test
+    @DisplayName("NO_CLUSTER status is persisted to td_sync_state")
+    void shouldPersistNoClusterStatus() {
+        tracker.markNoCluster("reason");
+        when(syncStateRepository.findByClusterName("test-eks-cluster")).thenReturn(java.util.Optional.empty());
+
+        tracker.persistSyncState();
+
+        verify(syncStateRepository).save(argThat(entity ->
+                "NO_CLUSTER".equals(entity.getStatus()) && !entity.isConnected()));
+    }
+
+    @Test
     @DisplayName("Should persist status to td_sync_state")
     void shouldPersistStatusToSyncState() {
         tracker.markConnected();

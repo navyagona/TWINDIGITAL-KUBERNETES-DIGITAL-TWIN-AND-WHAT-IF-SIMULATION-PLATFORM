@@ -19,6 +19,27 @@ export const StalenessBanner: React.FC<StalenessBannerProps> = ({
 
   if (!isStale) return null;
 
+  if (staleness.syncStatus === 'NO_CLUSTER') {
+    return (
+      <div className="staleness-banner animate-fade-in">
+        <div className="staleness-content">
+          <div className="staleness-icon-wrapper">
+            <AlertTriangle size={20} className="text-amber-400" />
+          </div>
+          <div className="staleness-text">
+            <div className="staleness-headline">
+              <span className="staleness-badge">NO CLUSTER</span>
+              <strong>No Kubernetes cluster is connected</strong>
+            </div>
+            <div className="staleness-details">
+              <span>cluster-sync has no credentials, so this graph is not live. Set KUBECONFIG_BASE64 in .env to sync a real cluster.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="staleness-banner animate-fade-in">
       <div className="staleness-content">

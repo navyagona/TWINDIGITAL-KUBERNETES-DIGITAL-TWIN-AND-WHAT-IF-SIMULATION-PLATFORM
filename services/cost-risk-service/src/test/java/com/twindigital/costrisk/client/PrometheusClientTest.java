@@ -84,4 +84,16 @@ class PrometheusClientTest {
         assertThat(prometheusClient.parsePrometheusResponse("")).isEmpty();
         assertThat(prometheusClient.parsePrometheusResponse("{\"status\":\"error\"}")).isEmpty();
     }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("Blank PROMETHEUS_URL means not configured: no queries, NOT_CONFIGURED window")
+    void shouldReportNotConfiguredForBlankUrl() {
+        PrometheusClient unconfigured = new PrometheusClient("", new com.fasterxml.jackson.databind.ObjectMapper());
+
+        PrometheusClient.UsageSnapshot snapshot = unconfigured.queryUsage();
+
+        org.assertj.core.api.Assertions.assertThat(unconfigured.isConfigured()).isFalse();
+        org.assertj.core.api.Assertions.assertThat(snapshot.hasData()).isFalse();
+        org.assertj.core.api.Assertions.assertThat(snapshot.window()).isEqualTo(PrometheusClient.UsageWindow.NOT_CONFIGURED);
+    }
 }

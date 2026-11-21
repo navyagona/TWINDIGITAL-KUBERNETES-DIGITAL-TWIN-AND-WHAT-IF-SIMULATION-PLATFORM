@@ -32,6 +32,32 @@ public class SimulationModels {
         CRITICAL
     }
 
+    /** Per-check verdict: FAIL = a CRITICAL finding, WARN = LOW..HIGH findings, PASS = none or INFO only. */
+    public enum CheckStatus {
+        PASS,
+        WARN,
+        FAIL;
+
+        public static CheckStatus from(List<SimulationFinding> findings) {
+            boolean critical = findings.stream().anyMatch(f -> f.getSeverity() == FindingSeverity.CRITICAL);
+            if (critical) return FAIL;
+            boolean warn = findings.stream().anyMatch(f -> f.getSeverity() != FindingSeverity.INFO);
+            return warn ? WARN : PASS;
+        }
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CheckResult {
+        private String name;
+        private CheckStatus status;
+        private FindingSeverity highestSeverity; // null when the check produced no findings
+        private int findingCount;
+        private String summary;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -103,6 +129,8 @@ public class SimulationModels {
         private String simulationId;
         private RiskLevel riskLevel;
         private int score;
+        @Builder.Default
+        private List<CheckResult> checks = new ArrayList<>();
         @Builder.Default
         private List<SimulationFinding> findings = new ArrayList<>();
         private String predictedOutcome;

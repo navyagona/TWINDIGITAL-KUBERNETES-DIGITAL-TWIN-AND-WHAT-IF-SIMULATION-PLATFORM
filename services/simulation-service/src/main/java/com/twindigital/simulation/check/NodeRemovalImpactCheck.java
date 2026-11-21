@@ -9,11 +9,13 @@ import com.twindigital.simulation.model.SimulationModels.ChangeSet;
 import com.twindigital.simulation.model.SimulationModels.FindingSeverity;
 import com.twindigital.simulation.model.SimulationModels.SimulationFinding;
 import com.twindigital.simulation.util.KubeQuantityParser;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
+@Order(30)
 public class NodeRemovalImpactCheck implements SimulationCheck {
 
     @Override
@@ -80,8 +82,10 @@ public class NodeRemovalImpactCheck implements SimulationCheck {
                 .filter(p -> !"DaemonSet".equalsIgnoreCase(p.getOwnerKind()))
                 .toList();
 
-        // 2. PodDisruptionBudget (PDB) Validation
-        Set<String> checkedPdbs = new HashSet<>();
+        // 2. PodDisruptionBudget (PDB) Validation: group displaced pods by the PDB that covers them
+        Map<String, ClusterPdbEntity> pdbsByName = new LinkedHashMap<>();
+        Map<String, List<ClusterPodEntity>> podsByPdb = new LinkedHashMap<>();
+        Map<String, String> appByPdb = new HashMap<>();
         for (ClusterPodEntity pod : displacedPods) {
             String appKey = pod.getOwnerName() != null ? pod.getOwnerName() :
                     (pod.getLabels() != null ? pod.getLabels().get("app") : null);
@@ -91,20 +95,40 @@ public class NodeRemovalImpactCheck implements SimulationCheck {
             Optional<ClusterPdbEntity> pdbOpt = context.findPdbForTarget(appKey);
             if (pdbOpt.isPresent()) {
                 ClusterPdbEntity pdb = pdbOpt.get();
-                if (checkedPdbs.add(pdb.getName())) {
-                    Integer disruptionsAllowed = pdb.getDisruptionsAllowed();
-                    if (disruptionsAllowed != null && disruptionsAllowed <= 0) {
-                        findings.add(SimulationFinding.builder()
-                                .check(getName())
-                                .severity(FindingSeverity.CRITICAL)
-                                .explanation(String.format("Node removal violates PodDisruptionBudget '%s': 0 disruptions currently allowed (minAvailable: %s, current healthy: %d, desired healthy: %d). Evicting pod '%s' will violate the disruption budget.",
-                                        pdb.getName(), pdb.getMinAvailable(), pdb.getCurrentHealthy() != null ? pdb.getCurrentHealthy() : 0,
-                                        pdb.getDesiredHealthy() != null ? pdb.getDesiredHealthy() : 0, pod.getName()))
-                                .suggestedFix(String.format("Scale up deployment '%s' replicas before draining node '%s' or adjust PDB '%s'.",
-                                        appKey, targetNodeName, pdb.getName()))
-                                .build());
-                    }
-                }
+                pdbsByName.putIfAbsent(pdb.getName(), pdb);
+                podsByPdb.computeIfAbsent(pdb.getName(), k -> new ArrayList<>()).add(pod);
+                appByPdb.putIfAbsent(pdb.getName(), appKey);
+            }
+        }
+
+        for (Map.Entry<String, ClusterPdbEntity> entry : pdbsByName.entrySet()) {
+            ClusterPdbEntity pdb = entry.getValue();
+            List<ClusterPodEntity> covered = podsByPdb.get(entry.getKey());
+            String appKey = appByPdb.get(entry.getKey());
+            Integer disruptionsAllowed = pdb.getDisruptionsAllowed();
+            if (disruptionsAllowed == null) continue;
+
+            if (disruptionsAllowed <= 0) {
+                findings.add(SimulationFinding.builder()
+                        .check(getName())
+                        .severity(FindingSeverity.CRITICAL)
+                        .explanation(String.format("Node removal violates PodDisruptionBudget '%s': 0 disruptions currently allowed (minAvailable: %s, current healthy: %d, desired healthy: %d). Evicting pod '%s' will violate the disruption budget.",
+                                pdb.getName(), pdb.getMinAvailable(), pdb.getCurrentHealthy() != null ? pdb.getCurrentHealthy() : 0,
+                                pdb.getDesiredHealthy() != null ? pdb.getDesiredHealthy() : 0, covered.get(0).getName()))
+                        .suggestedFix(String.format("Scale up deployment '%s' replicas before draining node '%s' or adjust PDB '%s'.",
+                                appKey, targetNodeName, pdb.getName()))
+                        .build());
+            } else if (covered.size() > disruptionsAllowed) {
+                // The eviction API admits only `disruptionsAllowed` at a time; drain proceeds as evicted pods
+                // become Ready elsewhere, so this slows the drain rather than blocking it.
+                findings.add(SimulationFinding.builder()
+                        .check(getName())
+                        .severity(FindingSeverity.MEDIUM)
+                        .explanation(String.format("Node '%s' hosts %d pod(s) covered by PodDisruptionBudget '%s', which allows only %d disruption(s) at a time. Drain will pause until evicted pods are Ready on other nodes.",
+                                targetNodeName, covered.size(), pdb.getName(), disruptionsAllowed))
+                        .suggestedFix(String.format("Spread '%s' replicas across nodes (pod anti-affinity or topology spread constraints) so one node never holds more than %d of them.",
+                                appKey, disruptionsAllowed))
+                        .build());
             }
         }
 
@@ -155,7 +179,9 @@ public class NodeRemovalImpactCheck implements SimulationCheck {
             long minRemaining = Long.MAX_VALUE;
 
             for (RemainingNodeBin bin : remainingBins) {
-                if (bin.matchesSelectors(pod.getLabels()) && bin.cpuAvail >= reqCpu && bin.memAvail >= reqMem) {
+                // Snapshot pods carry no nodeSelector, so placement is by capacity only. (Pod *labels* are
+                // not a node selector; matching on them made every displaced pod look unschedulable.)
+                if (bin.cpuAvail >= reqCpu && bin.memAvail >= reqMem) {
                     long remainingAfter = bin.cpuAvail - reqCpu;
                     if (remainingAfter < minRemaining) {
                         minRemaining = remainingAfter;

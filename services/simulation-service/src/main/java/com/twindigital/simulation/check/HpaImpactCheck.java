@@ -8,6 +8,7 @@ import com.twindigital.simulation.model.SimulationModels.ChangeSet;
 import com.twindigital.simulation.model.SimulationModels.FindingSeverity;
 import com.twindigital.simulation.model.SimulationModels.SimulationFinding;
 import com.twindigital.simulation.util.KubeQuantityParser;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@Order(40)
 public class HpaImpactCheck implements SimulationCheck {
 
     @Override

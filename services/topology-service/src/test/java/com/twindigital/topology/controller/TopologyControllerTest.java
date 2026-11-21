@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -132,5 +133,47 @@ class TopologyControllerTest {
         mockMvc.perform(get("/api/topology/blast-radius")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/topology/blast-radius/{id} accepts node ids containing slashes")
+    void shouldReturnBlastRadiusByPathId() throws Exception {
+        BlastRadiusResponse blastResponse = BlastRadiusResponse.builder()
+                .target(TopologyNode.builder().id("service:twindigital/gateway").name("gateway").type("SERVICE").build())
+                .upstream(Collections.emptyList())
+                .downstream(Collections.emptyList())
+                .impactedNodeIds(Set.of("service:twindigital/gateway"))
+                .impactedEdgeIds(Set.of())
+                .totalImpacted(0)
+                .riskScore("CRITICAL")
+                .build();
+        when(topologyGraphService.findBlastRadius(any(), eq("service:twindigital/gateway")))
+                .thenReturn(Optional.of(blastResponse));
+
+        mockMvc.perform(get("/api/v1/topology/blast-radius/service:twindigital/gateway"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.target.id").value("service:twindigital/gateway"))
+                .andExpect(jsonPath("$.riskScore").value("CRITICAL"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/topology/blast-radius/{id} returns 404 for an unknown node")
+    void shouldReturnNotFoundForUnknownPathId() throws Exception {
+        when(topologyGraphService.findBlastRadius(any(), eq("service:nope/missing"))).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/topology/blast-radius/service:nope/missing"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    @DisplayName("The ?target= form still routes to the legacy handler alongside the path form")
+    void queryFormStillRoutesToLegacyHandler() throws Exception {
+        when(topologyGraphService.calculateBlastRadius(any(), eq("gateway")))
+                .thenReturn(BlastRadiusResponse.builder().riskScore("CRITICAL").build());
+
+        mockMvc.perform(get("/api/v1/topology/blast-radius").param("target", "gateway"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.riskScore").value("CRITICAL"));
     }
 }

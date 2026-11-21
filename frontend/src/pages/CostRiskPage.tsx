@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   DollarSign,
   TrendingDown,
@@ -8,6 +8,8 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import api from '../api/client';
+import { usePolling } from '../hooks/usePolling';
+import SavingsBarChart, { type SavingsBar } from '../components/SavingsBarChart';
 
 interface OverprovisionedPod {
   podName: string;
@@ -34,6 +36,10 @@ interface OverprovisionedReport {
   overprovisionedPods: OverprovisionedPod[];
   evaluatedWindow: string;
   dataAvailable?: boolean;
+  /** 'PROMETHEUS' for measured usage, 'SAMPLE' when Prometheus is unset or empty */
+  dataSource?: 'PROMETHEUS' | 'SAMPLE' | string;
+  /** Illustrative suggestions from a fixed sample workload; only set when dataSource is SAMPLE */
+  sampleSuggestions?: OverprovisionedPod[];
 }
 
 interface NamespaceCost {
@@ -64,6 +70,72 @@ interface CostSummary {
   lastUpdated: string;
 }
 
+
+function RightSizingTable({ pods }: { pods: OverprovisionedPod[] }) {
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
+            <th style={{ padding: '0.6rem 0.5rem' }}>Pod / Service</th>
+            <th style={{ padding: '0.6rem 0.5rem' }}>CPU (Req → p95)</th>
+            <th style={{ padding: '0.6rem 0.5rem' }}>Recommended CPU</th>
+            <th style={{ padding: '0.6rem 0.5rem' }}>Memory (Req → p95)</th>
+            <th style={{ padding: '0.6rem 0.5rem' }}>Recommended RAM</th>
+            <th style={{ padding: '0.6rem 0.5rem' }}>Est. Waste ($/mo)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pods.map((p, idx) => (
+            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <td style={{ padding: '0.75rem 0.5rem' }}>
+                <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{p.serviceName}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
+                  {p.podName}
+                </div>
+              </td>
+              <td style={{ padding: '0.75rem 0.5rem' }}>
+                <div>{p.currentCpuRequest} → <span style={{ color: '#38bdf8' }}>{p.p95CpuUsage}</span></div>
+                <div style={{ fontSize: '0.7rem', color: '#f59e0b' }}>{p.cpuWastePercent.toFixed(0)}% unused</div>
+              </td>
+              <td style={{ padding: '0.75rem 0.5rem' }}>
+                <span className="badge badge-green" style={{ fontFamily: 'monospace' }}>
+                  {p.recommendedCpuRequest}
+                </span>
+              </td>
+              <td style={{ padding: '0.75rem 0.5rem' }}>
+                <div>{p.currentMemoryRequest} → <span style={{ color: '#38bdf8' }}>{p.p95MemoryUsage}</span></div>
+                <div style={{ fontSize: '0.7rem', color: '#f59e0b' }}>{p.memoryWastePercent.toFixed(0)}% unused</div>
+              </td>
+              <td style={{ padding: '0.75rem 0.5rem' }}>
+                <span className="badge badge-green" style={{ fontFamily: 'monospace' }}>
+                  {p.recommendedMemoryRequest}
+                </span>
+              </td>
+              <td style={{ padding: '0.75rem 0.5rem', fontWeight: 700, color: '#3fb950' }}>
+                ${p.estimatedMonthlyWasteUsd.toFixed(2)}/mo
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function toBars(pods: OverprovisionedPod[]): SavingsBar[] {
+  return pods.map((p) => ({
+    key: `${p.namespace}/${p.podName}`,
+    label: p.serviceName,
+    sublabel: p.podName,
+    value: p.estimatedMonthlyWasteUsd,
+    detail: [
+      `CPU ${p.currentCpuRequest} -> ${p.recommendedCpuRequest}`,
+      `Memory ${p.currentMemoryRequest} -> ${p.recommendedMemoryRequest}`,
+    ],
+  }));
+}
+
 export default function CostRiskPage() {
   const [costSummary, setCostSummary] = useState<CostSummary | null>(null);
   const [overReport, setOverReport] = useState<OverprovisionedReport | null>(null);
@@ -71,8 +143,8 @@ export default function CostRiskPage() {
   const [activeTab, setActiveTab] = useState<'overprovisioned' | 'breakdown'>('overprovisioned');
   const [isDemoData, setIsDemoData] = useState<boolean>(false);
 
-  async function fetchData() {
-    setLoading(true);
+  const fetchData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       let costRes, overRes;
       try {
@@ -126,13 +198,11 @@ export default function CostRiskPage() {
         overprovisionedPods: [],
       });
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    fetchData();
   }, []);
+
+  usePolling(fetchData);
 
   const hasPrometheusData = overReport?.dataAvailable !== false;
 
@@ -149,7 +219,7 @@ export default function CostRiskPage() {
           </p>
         </div>
 
-        <button className="btn btn-outline btn-sm" onClick={fetchData} disabled={loading}>
+        <button className="btn btn-outline btn-sm" onClick={() => fetchData(false)} disabled={loading}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           {loading ? 'Analyzing…' : 'Refresh'}
         </button>
@@ -209,7 +279,7 @@ export default function CostRiskPage() {
               Prometheus Metrics Unavailable (dataAvailable = false)
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.2rem' }}>
-              No 7-day p95 container usage telemetry was returned by Prometheus. Synthetic estimations have been removed to preserve data integrity. Right-sizing recommendations will appear once Prometheus telemetry is active.
+              {overReport?.evaluatedWindow?.startsWith('SAMPLE') ? overReport.evaluatedWindow : 'No 7-day p95 container usage telemetry was returned by Prometheus.'} Savings totals stay at N/A until real telemetry is available.
             </div>
           </div>
         </div>
@@ -302,15 +372,31 @@ export default function CostRiskPage() {
           </div>
 
           {!hasPrometheusData ? (
-            <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-              <AlertTriangle size={36} style={{ color: '#f59e0b', margin: '0 auto 0.75rem', opacity: 0.8 }} />
-              <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>
-                No Prometheus Metrics Available (dataAvailable = false)
+            (overReport?.sampleSuggestions?.length ?? 0) > 0 ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.9rem', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                  <span className="badge badge-yellow">SAMPLE DATA</span>
+                  Illustrative only: computed from a fixed sample workload, not from your cluster. Set PROMETHEUS_URL for real 7-day p95 recommendations.
+                </div>
+                <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+                  Estimated monthly savings per pod (sample)
+                </h4>
+                <SavingsBarChart bars={toBars(overReport!.sampleSuggestions!)} ariaLabel="Sample estimated monthly savings per pod" />
+                <div style={{ marginTop: '1rem' }}>
+                  <RightSizingTable pods={overReport!.sampleSuggestions!} />
+                </div>
               </div>
-              <p style={{ fontSize: '0.8rem', maxWidth: 520, margin: '0.5rem auto 0' }}>
-                Prometheus has not yet accumulated or returned 7-day p95 metrics for container CPU and memory. Synthetic fallback numbers have been removed to prevent inaccurate projections.
-              </p>
-            </div>
+            ) : (
+              <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                <AlertTriangle size={36} style={{ color: '#f59e0b', margin: '0 auto 0.75rem', opacity: 0.8 }} />
+                <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>
+                  No Prometheus Metrics Available (dataAvailable = false)
+                </div>
+                <p style={{ fontSize: '0.8rem', maxWidth: 520, margin: '0.5rem auto 0' }}>
+                  Prometheus has not returned 7-day p95 metrics for container CPU and memory. Right-sizing recommendations will appear once telemetry is available.
+                </p>
+              </div>
+            )
           ) : (overReport?.overprovisionedPods.length ?? 0) === 0 ? (
             <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
               <CheckCircle size={36} style={{ color: '#3fb950', margin: '0 auto 0.75rem', opacity: 0.8 }} />
@@ -322,52 +408,14 @@ export default function CostRiskPage() {
               </p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Pod / Service</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>CPU (Req → p95)</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Recommended CPU</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Memory (Req → p95)</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Recommended RAM</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Est. Waste ($/mo)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overReport?.overprovisionedPods.map((p, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={{ padding: '0.75rem 0.5rem' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{p.serviceName}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
-                          {p.podName}
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem' }}>
-                        <div>{p.currentCpuRequest} → <span style={{ color: '#38bdf8' }}>{p.p95CpuUsage}</span></div>
-                        <div style={{ fontSize: '0.7rem', color: '#f59e0b' }}>{p.cpuWastePercent.toFixed(0)}% unused</div>
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem' }}>
-                        <span className="badge badge-green" style={{ fontFamily: 'monospace' }}>
-                          {p.recommendedCpuRequest}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem' }}>
-                        <div>{p.currentMemoryRequest} → <span style={{ color: '#38bdf8' }}>{p.p95MemoryUsage}</span></div>
-                        <div style={{ fontSize: '0.7rem', color: '#f59e0b' }}>{p.memoryWastePercent.toFixed(0)}% unused</div>
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem' }}>
-                        <span className="badge badge-green" style={{ fontFamily: 'monospace' }}>
-                          {p.recommendedMemoryRequest}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 700, color: '#3fb950' }}>
-                        ${p.estimatedMonthlyWasteUsd.toFixed(2)}/mo
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>
+                Estimated monthly savings per pod
+              </h4>
+              <SavingsBarChart bars={toBars(overReport?.overprovisionedPods ?? [])} ariaLabel="Estimated monthly savings per pod" />
+              <div style={{ marginTop: '1rem' }}>
+                <RightSizingTable pods={overReport?.overprovisionedPods ?? []} />
+              </div>
             </div>
           )}
         </div>

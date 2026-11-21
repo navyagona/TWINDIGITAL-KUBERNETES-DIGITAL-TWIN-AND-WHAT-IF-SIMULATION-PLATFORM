@@ -10,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -66,7 +65,6 @@ class SimulationBddScenariosTest {
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
-    @InjectMocks
     private SimulationEngine simulationEngine;
 
     private static final String CLUSTER = "twindigital-cluster";
@@ -77,6 +75,14 @@ class SimulationBddScenariosTest {
 
     @BeforeEach
     void initClusterState() {
+        // Same check order the @Order annotations give in the Spring context
+        simulationEngine = new SimulationEngine(
+                nodeRepository, podRepository, deploymentRepository, hpaRepository,
+                pdbRepository, serviceRepository, auditRepository,
+                List.of(schedulingFitCheck, limitSanityCheck, nodeRemovalImpactCheck,
+                        hpaImpactCheck, blastRadiusCheck, serverDryRunCheck),
+                objectMapper);
+
         node1 = ClusterNodeEntity.builder()
                 .clusterName(CLUSTER)
                 .name("ip-10-0-1-10.ec2.internal")
@@ -478,5 +484,52 @@ class SimulationBddScenariosTest {
         assertThat(result.getFindings()).anyMatch(f -> "BlastRadius".equals(f.getCheck()) &&
                 f.getExplanation().contains("Broad blast radius"));
         assertThat(result.getRiskLevel()).isIn(RiskLevel.HIGH, RiskLevel.CRITICAL);
+    }
+
+    private void stubEmptySnapshot() {
+        when(nodeRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+        when(podRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+        when(deploymentRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+        when(hpaRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+        when(pdbRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+        when(serviceRepository.findByClusterName(CLUSTER)).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    @DisplayName("Result lists one PASS/WARN/FAIL verdict per registered check, in order")
+    void resultContainsPerCheckVerdicts() {
+        stubEmptySnapshot();
+
+        SimulationResult result = simulationEngine.runSimulation(SimulationRequest.builder()
+                .clusterName(CLUSTER)
+                .changeSet(ChangeSet.builder().kind(ChangeKind.RESOURCE_CHANGE).target("billing-service")
+                        .cpuRequest("500m").cpuLimit("200m").memRequest("256Mi").memLimit("512Mi").build())
+                .build());
+
+        assertThat(result.getChecks()).extracting(CheckResult::getName).containsExactly(
+                "SchedulingFit", "LimitSanity", "NodeRemovalImpact", "HpaImpact", "BlastRadius", "ServerDryRun");
+        CheckResult limit = result.getChecks().get(1);
+        assertThat(limit.getStatus()).isEqualTo(CheckStatus.FAIL);           // limit < request is CRITICAL
+        assertThat(limit.getSummary()).contains("less than CPU request");
+        assertThat(result.getChecks().get(2).getStatus()).isEqualTo(CheckStatus.PASS); // not a node removal
+        assertThat(result.getChecks().stream().mapToInt(CheckResult::getFindingCount).sum())
+                .isEqualTo(result.getFindings().size());
+    }
+
+    @Test
+    @DisplayName("Removing a seed node: pods reschedule onto the other node and the PDB allows it")
+    void seedNodeRemovalIsNotCritical() {
+        stubEmptySnapshot();
+
+        SimulationResult result = simulationEngine.runSimulation(SimulationRequest.builder()
+                .clusterName(CLUSTER)
+                .changeSet(ChangeSet.builder().kind(ChangeKind.NODE_REMOVAL).target("ip-10-0-2-20.ec2.internal").build())
+                .build());
+
+        assertThat(result.isSeedSnapshotUsed()).isTrue();
+        CheckResult nodeRemoval = result.getChecks().stream()
+                .filter(c -> "NodeRemovalImpact".equals(c.getName())).findFirst().orElseThrow();
+        assertThat(nodeRemoval.getStatus()).isEqualTo(CheckStatus.PASS);
+        assertThat(result.getRiskLevel()).isNotEqualTo(RiskLevel.CRITICAL);
     }
 }

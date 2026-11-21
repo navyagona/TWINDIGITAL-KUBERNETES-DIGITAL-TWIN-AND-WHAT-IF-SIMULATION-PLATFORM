@@ -9,6 +9,8 @@ import {
   Activity,
 } from 'lucide-react';
 import api from '../api/client';
+import StatusPill from '../components/StatusPill';
+import { checkTone } from '../components/statusTone';
 
 export type ChangeKind = 'RESOURCE_CHANGE' | 'SCALE' | 'NODE_REMOVAL' | 'NEW_DEPLOYMENT';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -32,11 +34,50 @@ interface CapacitySummary {
   totalPods: number;
 }
 
+type CheckStatus = 'PASS' | 'WARN' | 'FAIL';
+
+interface CheckResult {
+  name: string;
+  status: CheckStatus;
+  highestSeverity: Finding['severity'] | null;
+  findingCount: number;
+  summary: string;
+}
+
+/** The five required checks plus the opt-in dry run, in engine order */
+const CHECK_ORDER = ['SchedulingFit', 'LimitSanity', 'NodeRemovalImpact', 'HpaImpact', 'BlastRadius', 'ServerDryRun'];
+const SEVERITY_RANK: Record<Finding['severity'], number> = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
+
+/** Same rule as the backend: CRITICAL -> FAIL, LOW..HIGH -> WARN, none/INFO -> PASS */
+function statusFor(findings: Finding[]): CheckStatus {
+  if (findings.some((f) => f.severity === 'CRITICAL')) return 'FAIL';
+  if (findings.some((f) => f.severity !== 'INFO')) return 'WARN';
+  return 'PASS';
+}
+
+/** Uses the server's per-check verdicts; derives them from findings for demo or older responses */
+function checksFor(result: SimulationResult): CheckResult[] {
+  if (result.checks && result.checks.length > 0) return result.checks;
+  const names = [...CHECK_ORDER, ...result.findings.map((f) => f.check).filter((c) => !CHECK_ORDER.includes(c))];
+  return [...new Set(names)].map((name) => {
+    const own = result.findings.filter((f) => f.check === name);
+    const worst = own.reduce<Finding | null>((w, f) => (!w || SEVERITY_RANK[f.severity] > SEVERITY_RANK[w.severity] ? f : w), null);
+    return {
+      name,
+      status: statusFor(own),
+      highestSeverity: worst?.severity ?? null,
+      findingCount: own.length,
+      summary: worst?.explanation ?? 'No issues found',
+    };
+  });
+}
+
 interface SimulationResult {
   simulationId: string;
   riskLevel: RiskLevel;
   score: number;
   predictedOutcome: string;
+  checks?: CheckResult[];
   findings: Finding[];
   capacitySummary?: CapacitySummary;
   costDelta?: number | null;
@@ -140,9 +181,9 @@ export default function SimulationPage() {
     try {
       let res;
       try {
-        res = await api.post<SimulationResult>('/api/v1/simulations', payload);
+        res = await api.post<SimulationResult>('/api/v1/simulate', payload);
       } catch {
-        res = await api.post<SimulationResult>('/api/simulations', payload);
+        res = await api.post<SimulationResult>('/api/v1/simulations', payload);
       }
       setResult(res.data);
       setIsDemoData(Boolean(res.data.seedSnapshotUsed));
@@ -485,10 +526,39 @@ export default function SimulationPage() {
               )}
 
 
+              {/* Per-check verdicts */}
+              <div>
+                <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: '0.65rem' }}>
+                  Check Results
+                </h4>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Check</th>
+                        <th>Result</th>
+                        <th style={{ textAlign: 'right' }}>Findings</th>
+                        <th>Summary</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {checksFor(result).map((c) => (
+                        <tr key={c.name} className={`check-row ${checkTone(c.status)}`}>
+                          <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{c.name}</td>
+                          <td><StatusPill tone={checkTone(c.status)} label={c.status} /></td>
+                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{c.findingCount}</td>
+                          <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.78rem', lineHeight: 1.4 }}>{c.summary}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               {/* Findings */}
               <div>
                 <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', marginBottom: '0.65rem' }}>
-                  Findings & Unit Checks ({result.findings.length})
+                  Finding Details ({result.findings.length})
                 </h4>
 
                 {result.findings.length === 0 ? (

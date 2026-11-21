@@ -22,6 +22,7 @@ const clusterSyncRoutes = require('./routes/clusterSync');
 const topologyRoutes = require('./routes/topology');
 const simulationRoutes = require('./routes/simulation');
 const costRiskRoutes = require('./routes/costRisk');
+const createServiceHealthRouter = require('./routes/serviceHealth');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -74,7 +75,8 @@ app.use('/api/auth', ipRateLimiter, authRoutes);
 // All routes below require valid JWT and enforce per-user rate limiting
 app.use('/api/v1', jwtVerify, userRateLimiter);
 
-// VIEWER and ADMIN can read topology, cluster sync state, and cost assessments
+// VIEWER and ADMIN can read backend service health, topology, cluster sync state, and cost assessments
+app.use('/api/v1/health/services', requireRole('VIEWER', 'ADMIN'), createServiceHealthRouter());
 app.use('/api/v1/topology', requireRole('VIEWER', 'ADMIN'), topologyRoutes);
 app.use('/api/topology', jwtVerify, userRateLimiter, requireRole('VIEWER', 'ADMIN'), topologyRoutes);
 app.use('/api/v1/cluster', requireRole('VIEWER', 'ADMIN'), clusterSyncRoutes);
@@ -83,6 +85,7 @@ app.use('/api/v1/cost', requireRole('VIEWER', 'ADMIN'), costRiskRoutes);
 app.use('/api/cost', jwtVerify, userRateLimiter, requireRole('VIEWER', 'ADMIN'), costRiskRoutes);
 
 // ONLY ADMIN can access simulations
+app.use('/api/v1/simulate', requireRole('ADMIN'), simulationRoutes);
 app.use('/api/v1/simulations', requireRole('ADMIN'), simulationRoutes);
 app.use('/api/simulations', jwtVerify, userRateLimiter, requireRole('ADMIN'), simulationRoutes);
 

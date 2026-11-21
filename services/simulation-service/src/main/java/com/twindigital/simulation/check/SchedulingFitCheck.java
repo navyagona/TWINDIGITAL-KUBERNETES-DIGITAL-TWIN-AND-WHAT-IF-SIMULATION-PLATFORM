@@ -9,11 +9,13 @@ import com.twindigital.simulation.model.SimulationModels.ChangeSet;
 import com.twindigital.simulation.model.SimulationModels.FindingSeverity;
 import com.twindigital.simulation.model.SimulationModels.SimulationFinding;
 import com.twindigital.simulation.util.KubeQuantityParser;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
+@Order(10)
 public class SchedulingFitCheck implements SimulationCheck {
 
     @Override
@@ -88,6 +90,13 @@ public class SchedulingFitCheck implements SimulationCheck {
             int replicas = cs.getReplicas() != null ? cs.getReplicas() :
                     optDep.map(ClusterDeploymentEntity::getReplicas).orElse(Math.max(1, targetPods.size()));
             totalPodsToPlace = replicas;
+            // A change to only CPU (or only memory) keeps the pods' current request for the other dimension
+            if (reqCpu == 0L && !targetPods.isEmpty()) {
+                reqCpu = KubeQuantityParser.parseCpuMillis(targetPods.get(0).getCpuRequests());
+            }
+            if (reqMem == 0L && !targetPods.isEmpty()) {
+                reqMem = KubeQuantityParser.parseMemoryBytes(targetPods.get(0).getMemoryRequests());
+            }
         } else if (cs.getKind() == ChangeKind.NEW_DEPLOYMENT) {
             totalPodsToPlace = cs.getReplicas() != null ? Math.max(1, cs.getReplicas()) : 1;
         }

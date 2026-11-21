@@ -14,7 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class SyncStatusResponse {
     /**
-     * Overall sync status: "HEALTHY" or "STALE"
+     * Overall sync status: "HEALTHY", "STALE", or "NO_CLUSTER" (no Kubernetes credentials configured)
      */
     private String status;
 

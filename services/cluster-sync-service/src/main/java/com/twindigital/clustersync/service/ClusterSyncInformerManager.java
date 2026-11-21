@@ -1,5 +1,6 @@
 package com.twindigital.clustersync.service;
 
+import com.twindigital.clustersync.config.ClusterConnection;
 import com.twindigital.clustersync.config.ClusterSyncProperties;
 import com.twindigital.clustersync.metrics.ClusterSyncMetrics;
 import com.twindigital.clustersync.model.mapper.KubernetesResourceMapper;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ClusterSyncInformerManager implements SmartLifecycle {
 
     private final ApiClient apiClient;
+    private final ClusterConnection clusterConnection;
     private final ClusterSyncProperties properties;
     private final KubernetesResourceMapper mapper;
     private final KubernetesResourcePersister persister;
@@ -52,6 +54,17 @@ public class ClusterSyncInformerManager implements SmartLifecycle {
     public void start() {
         if (!properties.isAutoStart()) {
             log.info("Cluster sync auto-start disabled by configuration.");
+            return;
+        }
+
+        if (!clusterConnection.configured()) {
+            // No credentials: stay up, report NO_CLUSTER, and skip informers and the reconnect loop.
+            healthTracker.markNoCluster(clusterConnection.detail());
+            try {
+                healthTracker.persistSyncState();
+            } catch (Exception e) {
+                log.error("Failed to persist NO_CLUSTER state to td_sync_state: {}", e.getMessage());
+            }
             return;
         }
 

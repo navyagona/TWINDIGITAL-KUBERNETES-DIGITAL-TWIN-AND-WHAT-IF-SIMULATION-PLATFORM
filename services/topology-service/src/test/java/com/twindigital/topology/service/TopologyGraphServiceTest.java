@@ -130,6 +130,15 @@ class TopologyGraphServiceTest {
                 .memoryRequests("256Mi")
                 .build();
 
+        ClusterServiceEntity authSvc = ClusterServiceEntity.builder()
+                .clusterName(cluster)
+                .namespace("twindigital")
+                .name("auth-service")
+                .serviceType("ClusterIP")
+                .clusterIp("172.20.10.2")
+                .selector(Map.of("app", "auth-service"))
+                .build();
+
         ClusterServiceEntity billingSvc = ClusterServiceEntity.builder()
                 .clusterName(cluster)
                 .namespace("twindigital")
@@ -150,14 +159,14 @@ class TopologyGraphServiceTest {
         when(nodeRepository.findByClusterName(cluster)).thenReturn(List.of(node));
         when(podRepository.findByClusterName(cluster)).thenReturn(List.of(pod));
         when(deploymentRepository.findByClusterName(cluster)).thenReturn(List.of(authDep, billingDep));
-        when(serviceRepository.findByClusterName(cluster)).thenReturn(List.of(billingSvc));
+        when(serviceRepository.findByClusterName(cluster)).thenReturn(List.of(billingSvc, authSvc));
         when(syncStateRepository.findByClusterName(cluster)).thenReturn(Optional.of(syncState));
         when(dependencyRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
 
         TopologyResponse response = topologyGraphService.getTopology(cluster);
 
         assertThat(response).isNotNull();
-        assertThat(response.getNodes()).hasSize(5); // 1 node, 2 deployments, 1 pod, 1 svc
+        assertThat(response.getNodes()).hasSize(6); // 1 node, 2 deployments, 1 pod, 2 svcs
 
         // Check Node -> Pod edge
         boolean nodeToPodEdge = response.getEdges().stream()
@@ -200,6 +209,15 @@ class TopologyGraphServiceTest {
                 .annotations(Collections.emptyMap())
                 .build();
 
+        ClusterServiceEntity authSvc = ClusterServiceEntity.builder()
+                .clusterName(cluster)
+                .namespace("twindigital")
+                .name("auth-service")
+                .serviceType("ClusterIP")
+                .clusterIp("172.20.10.2")
+                .selector(Map.of("app", "auth-service"))
+                .build();
+
         ClusterServiceEntity billingSvc = ClusterServiceEntity.builder()
                 .clusterName(cluster)
                 .namespace("twindigital")
@@ -212,7 +230,7 @@ class TopologyGraphServiceTest {
         when(nodeRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
         when(podRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
         when(deploymentRepository.findByClusterName(cluster)).thenReturn(List.of(authDep, billingDep));
-        when(serviceRepository.findByClusterName(cluster)).thenReturn(List.of(billingSvc));
+        when(serviceRepository.findByClusterName(cluster)).thenReturn(List.of(billingSvc, authSvc));
         when(syncStateRepository.findByClusterName(cluster)).thenReturn(Optional.empty());
         when(dependencyRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
 
@@ -255,5 +273,122 @@ class TopologyGraphServiceTest {
     void shouldThrowWhenTargetIsBlank() {
         assertThatThrownBy(() -> topologyGraphService.calculateBlastRadius("cluster", ""))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private void stubEmptyCluster() {
+        when(nodeRepository.findByClusterName(anyString())).thenReturn(Collections.emptyList());
+        when(podRepository.findByClusterName(anyString())).thenReturn(Collections.emptyList());
+        when(deploymentRepository.findByClusterName(anyString())).thenReturn(Collections.emptyList());
+        when(serviceRepository.findByClusterName(anyString())).thenReturn(Collections.emptyList());
+        when(syncStateRepository.findByClusterName(anyString())).thenReturn(Optional.empty());
+    }
+
+    @Test
+    @DisplayName("Seed graph has 18 nodes and 19 edges, all edges between existing nodes")
+    void seedGraphHasExpectedShape() {
+        stubEmptyCluster();
+
+        TopologyResponse response = topologyGraphService.getTopology(null);
+
+        assertThat(response.getNodes()).hasSize(18);
+        assertThat(response.getEdges()).hasSize(19);
+        Set<String> ids = new HashSet<>();
+        response.getNodes().forEach(n -> ids.add(n.getId()));
+        assertThat(response.getEdges()).allMatch(e -> ids.contains(e.getSource()) && ids.contains(e.getTarget()));
+    }
+
+    @Test
+    @DisplayName("LIVE graph drops edges to services that are not in the synced cluster")
+    void liveGraphDropsDanglingEdges() {
+        String cluster = "other-cluster";
+        ClusterDeploymentEntity shop = ClusterDeploymentEntity.builder()
+                .clusterName(cluster).namespace("shop").name("cart")
+                .replicas(1).readyReplicas(1)
+                .labels(Map.of("app", "cart"))
+                .annotations(Map.of("twindigital.io/depends-on", "ghost-service"))
+                .build();
+        ClusterServiceEntity cartSvc = ClusterServiceEntity.builder()
+                .clusterName(cluster).namespace("shop").name("cart")
+                .selector(Map.of("app", "cart"))
+                .build();
+
+        when(nodeRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
+        when(podRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
+        when(deploymentRepository.findByClusterName(cluster)).thenReturn(List.of(shop));
+        when(serviceRepository.findByClusterName(cluster)).thenReturn(List.of(cartSvc));
+        when(syncStateRepository.findByClusterName(cluster)).thenReturn(Optional.empty());
+        when(dependencyRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
+
+        TopologyResponse response = topologyGraphService.getTopology(cluster);
+
+        Set<String> ids = new HashSet<>();
+        response.getNodes().forEach(n -> ids.add(n.getId()));
+        assertThat(response.getEdges()).allMatch(e -> ids.contains(e.getSource()) && ids.contains(e.getTarget()));
+        // built-in TwinDigital gateway edges and the ghost dependency are gone; service -> deployment stays
+        assertThat(response.getEdges()).extracting("id").containsExactly("e:svc-dep:cart_cart");
+    }
+
+    @Test
+    @DisplayName("Pods attach to the deployment whose name is their longest '<name>-' prefix")
+    void podAttachesToLongestMatchingDeployment() {
+        String cluster = "c";
+        ClusterDeploymentEntity auth = ClusterDeploymentEntity.builder()
+                .clusterName(cluster).namespace("ns").name("auth").build();
+        ClusterDeploymentEntity authService = ClusterDeploymentEntity.builder()
+                .clusterName(cluster).namespace("ns").name("auth-service").build();
+        ClusterPodEntity pod = ClusterPodEntity.builder()
+                .clusterName(cluster).namespace("ns").name("auth-service-5d9f7-abcde")
+                .ownerKind("ReplicaSet").ownerName("auth-service-5d9f7")
+                .build();
+
+        when(nodeRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
+        when(podRepository.findByClusterName(cluster)).thenReturn(List.of(pod));
+        when(deploymentRepository.findByClusterName(cluster)).thenReturn(List.of(auth, authService));
+        when(serviceRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
+        when(syncStateRepository.findByClusterName(cluster)).thenReturn(Optional.empty());
+        when(dependencyRepository.findByClusterName(cluster)).thenReturn(Collections.emptyList());
+
+        TopologyResponse response = topologyGraphService.getTopology(cluster);
+
+        assertThat(response.getEdges())
+                .filteredOn(e -> "manages".equals(e.getLabel()))
+                .extracting("source")
+                .containsExactly("deployment:ns/auth-service");
+    }
+
+    @Test
+    @DisplayName("findBlastRadius resolves an exact node id and walks callers with BFS")
+    void findBlastRadiusByExactId() {
+        stubEmptyCluster();
+
+        Optional<BlastRadiusResponse> result =
+                topologyGraphService.findBlastRadius(null, "service:twindigital/topology-service");
+
+        assertThat(result).isPresent();
+        BlastRadiusResponse br = result.get();
+        assertThat(br.getTarget().getId()).isEqualTo("service:twindigital/topology-service");
+        // callers: gateway and simulation directly, plus ingress via gateway (transitive)
+        assertThat(br.getUpstream()).extracting("id").containsExactlyInAnyOrder(
+                "service:twindigital/gateway", "service:twindigital/simulation-service", "ingress:gateway-alb");
+        assertThat(br.getDownstream()).extracting("id").containsExactly("service:twindigital/cluster-sync-service");
+    }
+
+    @Test
+    @DisplayName("findBlastRadius by bare name prefers the SERVICE node")
+    void findBlastRadiusByNamePrefersService() {
+        stubEmptyCluster();
+
+        Optional<BlastRadiusResponse> result = topologyGraphService.findBlastRadius(null, "gateway");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getTarget().getType()).isEqualTo("SERVICE");
+    }
+
+    @Test
+    @DisplayName("findBlastRadius returns empty for an id that is not in the graph")
+    void findBlastRadiusUnknownIdIsEmpty() {
+        stubEmptyCluster();
+
+        assertThat(topologyGraphService.findBlastRadius(null, "service:nope/missing")).isEmpty();
     }
 }

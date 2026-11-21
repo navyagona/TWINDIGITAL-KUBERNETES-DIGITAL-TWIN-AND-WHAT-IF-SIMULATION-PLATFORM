@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
@@ -31,12 +30,8 @@ public class SimulationEngine {
     private final ClusterServiceRepository serviceRepository;
     private final SimulationAuditRepository auditRepository;
 
-    private final SchedulingFitCheck schedulingFitCheck;
-    private final LimitSanityCheck limitSanityCheck;
-    private final NodeRemovalImpactCheck nodeRemovalImpactCheck;
-    private final HpaImpactCheck hpaImpactCheck;
-    private final BlastRadiusCheck blastRadiusCheck;
-    private final ServerDryRunCheck serverDryRunCheck;
+    /** Every SimulationCheck bean, in @Order order. Add a check by adding a @Component; no engine change needed. */
+    private final List<SimulationCheck> checks;
 
     private final ObjectMapper objectMapper;
 
@@ -48,7 +43,9 @@ public class SimulationEngine {
 
     private static final String DEFAULT_CLUSTER = "twindigital-cluster";
 
-    @Transactional
+    // Not @Transactional: reads need no shared transaction, and holding one open across the
+    // topology/cost-risk HTTP calls would pin a DB connection. A failed audit save would also mark
+    // a surrounding transaction rollback-only and turn a successful simulation into a 500.
     public SimulationResult runSimulation(SimulationRequest request) {
         String clusterName = (request.getClusterName() != null && !request.getClusterName().isBlank())
                 ? request.getClusterName() : DEFAULT_CLUSTER;
@@ -62,14 +59,14 @@ public class SimulationEngine {
         // 1. Build Simulation Context from DB (or fallback seed)
         SimulationContext context = buildContext(clusterName, user, cs);
 
-        // 2. Execute all separate unit-tested check classes
+        // 2. Run every registered check; record a PASS/WARN/FAIL verdict per check
         List<SimulationFinding> findings = new ArrayList<>();
-        findings.addAll(schedulingFitCheck.evaluate(context));
-        findings.addAll(limitSanityCheck.evaluate(context));
-        findings.addAll(nodeRemovalImpactCheck.evaluate(context));
-        findings.addAll(hpaImpactCheck.evaluate(context));
-        findings.addAll(blastRadiusCheck.evaluate(context));
-        findings.addAll(serverDryRunCheck.evaluate(context));
+        List<CheckResult> checkResults = new ArrayList<>();
+        for (SimulationCheck check : checks) {
+            List<SimulationFinding> checkFindings = check.evaluate(context);
+            findings.addAll(checkFindings);
+            checkResults.add(summarizeCheck(check.getName(), checkFindings));
+        }
 
         // 3. Compute Risk Score & Risk Level
         int score = calculateRiskScore(findings);
@@ -90,6 +87,7 @@ public class SimulationEngine {
                 .simulationId(simulationId.toString())
                 .riskLevel(riskLevel)
                 .score(score)
+                .checks(checkResults)
                 .findings(findings)
                 .predictedOutcome(predictedOutcome)
                 .capacitySummary(capacitySummary)
@@ -238,6 +236,18 @@ public class SimulationEngine {
                     costRiskServiceUrl, e.getMessage());
         }
         return null;
+    }
+
+    static CheckResult summarizeCheck(String name, List<SimulationFinding> checkFindings) {
+        Optional<SimulationFinding> worst = checkFindings.stream()
+                .max(Comparator.comparing(SimulationFinding::getSeverity));
+        return CheckResult.builder()
+                .name(name)
+                .status(CheckStatus.from(checkFindings))
+                .highestSeverity(worst.map(SimulationFinding::getSeverity).orElse(null))
+                .findingCount(checkFindings.size())
+                .summary(worst.map(SimulationFinding::getExplanation).orElse("No issues found"))
+                .build();
     }
 
     private int calculateRiskScore(List<SimulationFinding> findings) {

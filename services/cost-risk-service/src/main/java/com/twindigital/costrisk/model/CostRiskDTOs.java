@@ -48,6 +48,16 @@ public class CostRiskDTOs {
         private Instant evaluatedAt;
         @Builder.Default
         private boolean dataAvailable = true;
+        /** "PROMETHEUS" when real metrics were used; "SAMPLE" when Prometheus is unset or returned nothing. */
+        @Builder.Default
+        private String dataSource = "PROMETHEUS";
+        /**
+         * Illustrative suggestions computed from a fixed sample workload, present only when
+         * dataSource is "SAMPLE". Kept apart from overprovisionedPods so sample numbers never
+         * reach real totals, savings, or the twin_overprovisioned_pods gauge.
+         */
+        @Builder.Default
+        private List<OverprovisionedPod> sampleSuggestions = new ArrayList<>();
     }
 
     @Data
@@ -102,6 +112,7 @@ public class CostRiskDTOs {
     public static class EstimateChangeRequest {
         private String kind;                     // "RESOURCE_CHANGE", "SCALE", "NEW_DEPLOYMENT", "NODE_REMOVAL"
         private String target;                   // Deployment or Node name
+        private String clusterName;              // optional; defaults to twindigital-cluster
         @Builder.Default
         private String namespace = "twindigital";
         private Integer replicas;
@@ -123,5 +134,9 @@ public class CostRiskDTOs {
         private double deltaMonthlyUsd;
         private double deltaAnnualUsd;
         private String explanation;
+        /** Where hourly rates came from, e.g. "td_instance_pricing ap-south-1 t3.medium" or "DEFAULT_RATE". */
+        private String pricingSource;
+        /** Where current replicas/requests came from: "REQUEST", "CLUSTER_SNAPSHOT", or "ASSUMED_DEFAULTS". */
+        private String baselineSource;
     }
 }

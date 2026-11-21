@@ -24,58 +24,85 @@ public class PrometheusClient {
     public static final String MEMORY_FALLBACK_QUERY =
             "container_memory_working_set_bytes{container!=\"\",container!=\"POD\"}";
 
+    /** Which query produced the data in a {@link UsageSnapshot}. */
+    public enum UsageWindow {
+        /** PROMETHEUS_URL is unset; no query was attempted. */
+        NOT_CONFIGURED,
+        /** Queries ran but returned nothing (unreachable, no cAdvisor metrics, or an error). */
+        NO_DATA,
+        /** 7-day p95 via quantile_over_time. */
+        P95_7D,
+        /** The 7-day query returned nothing, so at least one metric fell back to the current instant value. */
+        INSTANT_FALLBACK
+    }
+
+    /** Per-pod usage: CPU in millicores, memory in bytes, plus the window that produced it. */
+    public record UsageSnapshot(Map<String, Double> cpuMillis, Map<String, Long> memoryBytes, UsageWindow window) {
+        public boolean hasData() {
+            return !cpuMillis.isEmpty() || !memoryBytes.isEmpty();
+        }
+    }
+
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
+    private final boolean configured;
 
     @Autowired
     public PrometheusClient(
-            @Value("${services.prometheus.url:http://localhost:9090}") String prometheusUrl,
+            @Value("${services.prometheus.url:}") String prometheusUrl,
             ObjectMapper objectMapper) {
-        this(WebClient.builder().baseUrl(prometheusUrl).build(), objectMapper);
+        this(prometheusUrl == null || prometheusUrl.isBlank()
+                        ? null : WebClient.builder().baseUrl(prometheusUrl.trim()).build(),
+                objectMapper);
     }
 
+    /** A null webClient means Prometheus is not configured. */
     public PrometheusClient(WebClient webClient, ObjectMapper objectMapper) {
         this.webClient = webClient;
         this.objectMapper = objectMapper;
+        this.configured = webClient != null;
+    }
+
+    public boolean isConfigured() {
+        return configured;
     }
 
     /**
-     * Queries Prometheus for per-pod CPU usage in millicores (7-day p95 or instantaneous rate).
-     * Returns Map: podName -> p95 CPU millicores.
+     * Fetches per-pod CPU and memory usage, preferring the 7-day p95 and recording when a metric had
+     * to fall back to an instant value, so callers can label the result honestly.
      */
-    public Map<String, Double> queryPodCpuUsageP95() {
-        Map<String, Double> result = executeVectorQuery(CPU_QUERY);
-        if (result.isEmpty()) {
-            // Fallback query without 7-day range if Prometheus has shorter retention
-            result = executeVectorQuery(CPU_FALLBACK_QUERY);
+    public UsageSnapshot queryUsage() {
+        if (!configured) {
+            return new UsageSnapshot(Map.of(), Map.of(), UsageWindow.NOT_CONFIGURED);
+        }
+        boolean fellBack = false;
+
+        Map<String, Double> cpuCores = executeVectorQuery(CPU_QUERY);
+        if (cpuCores.isEmpty()) {
+            cpuCores = executeVectorQuery(CPU_FALLBACK_QUERY);
+            fellBack |= !cpuCores.isEmpty();
+        }
+        Map<String, Double> memRaw = executeVectorQuery(MEMORY_QUERY);
+        if (memRaw.isEmpty()) {
+            memRaw = executeVectorQuery(MEMORY_FALLBACK_QUERY);
+            fellBack |= !memRaw.isEmpty();
         }
 
-        // Convert CPU cores (e.g. 0.045) to millicores (45.0m)
-        Map<String, Double> millicoresMap = new HashMap<>();
-        for (Map.Entry<String, Double> e : result.entrySet()) {
-            millicoresMap.put(e.getKey(), e.getValue() * 1000.0);
-        }
-        return millicoresMap;
-    }
+        Map<String, Double> cpuMillis = new HashMap<>();
+        cpuCores.forEach((pod, cores) -> cpuMillis.put(pod, cores * 1000.0));
+        Map<String, Long> memBytes = new HashMap<>();
+        memRaw.forEach((pod, bytes) -> memBytes.put(pod, bytes.longValue()));
 
-    /**
-     * Queries Prometheus for per-pod Memory working set usage in bytes (7-day p95).
-     * Returns Map: podName -> p95 Memory bytes.
-     */
-    public Map<String, Long> queryPodMemoryUsageP95() {
-        Map<String, Double> result = executeVectorQuery(MEMORY_QUERY);
-        if (result.isEmpty()) {
-            result = executeVectorQuery(MEMORY_FALLBACK_QUERY);
-        }
-
-        Map<String, Long> bytesMap = new HashMap<>();
-        for (Map.Entry<String, Double> e : result.entrySet()) {
-            bytesMap.put(e.getKey(), e.getValue().longValue());
-        }
-        return bytesMap;
+        UsageWindow window;
+        if (cpuMillis.isEmpty() && memBytes.isEmpty()) window = UsageWindow.NO_DATA;
+        else window = fellBack ? UsageWindow.INSTANT_FALLBACK : UsageWindow.P95_7D;
+        return new UsageSnapshot(cpuMillis, memBytes, window);
     }
 
     private Map<String, Double> executeVectorQuery(String promQl) {
+        if (!configured) {
+            return Collections.emptyMap();
+        }
         try {
             String response = webClient.get()
                     .uri(uriBuilder -> uriBuilder

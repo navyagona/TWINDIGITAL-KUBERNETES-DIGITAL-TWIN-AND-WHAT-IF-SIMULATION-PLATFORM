@@ -1,12 +1,18 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Network, FlaskConical, DollarSign, LogOut } from 'lucide-react';
-import useAuthStore from '../store/authStore';
+import { LayoutDashboard, Network, FlaskConical, DollarSign, LogOut, type LucideIcon } from 'lucide-react';
+import useAuthStore, { isViewerRole } from '../store/authStore';
 
-const NAV = [
-  { to: '/',           label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/topology',   label: 'Topology',   icon: Network },
-  { to: '/simulate',   label: 'Simulate',   icon: FlaskConical },
-  { to: '/cost-risk',  label: 'Cost & Risk',icon: DollarSign },
+interface NavEntry {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+const NAV: NavEntry[] = [
+  { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
+  { to: '/topology',  label: 'Topology',    icon: Network },
+  { to: '/simulate',  label: 'Simulate',    icon: FlaskConical },
+  { to: '/cost-risk', label: 'Cost & Risk', icon: DollarSign },
 ];
 
 export default function Sidebar() {
@@ -19,7 +25,7 @@ export default function Sidebar() {
     navigate('/login');
   }
 
-  const isViewer = user?.role?.toUpperCase() === 'VIEWER';
+  const isViewer = isViewerRole(user);
   const visibleNav = NAV.filter((item) => !(isViewer && item.to === '/simulate'));
 
   return (
@@ -57,4 +63,3 @@ export default function Sidebar() {
     </nav>
   );
 }
-
