@@ -7,7 +7,11 @@
 ---
 
 **Institution:** Lovely Professional University  
-**Project Repository:** GitHub: `cloudca/`
+
+**Project Deploy Links:**  
+GitHub: [https://github.com/navyagona/TWINDIGITAL-KUBERNETES-DIGITAL-TWIN-AND-WHAT-IF-SIMULATION-PLATFORM](https://github.com/navyagona/TWINDIGITAL-KUBERNETES-DIGITAL-TWIN-AND-WHAT-IF-SIMULATION-PLATFORM)  
+Docker Registry: Amazon ECR (`twindigital/`)  
+Live Local Endpoints: Web UI (`http://localhost:8088`), API Gateway (`http://localhost:3000`)  
 
 **Submitted by:** Gona Navya Ramani  
 **Branch:** B.Tech – Computer Science and Engineering  
@@ -72,7 +76,7 @@ The report explains the system architecture, implementation details, deployment 
 
 **Keywords:** TwinDigital, Kubernetes, digital twin, Docker Compose, Spring Boot, React, microservices, what-if simulation, blast radius, Terraform, EKS, Jenkins, DevSecOps, Prometheus, Grafana, topology graph.
 
-**IMPLEMENTATION SUMMARY:** The delivered package includes the React frontend, five Spring Boot Java microservices, an Express API gateway, Docker Compose configuration, Flyway database migrations, Kubernetes Kustomize manifests, Terraform infrastructure code, an 8-stage Jenkins CI/CD pipeline, and a comprehensive automated test suite with 109 passing tests.
+**IMPLEMENTATION SUMMARY:** The delivered package includes the React frontend, five Spring Boot Java microservices, an Express API gateway, Docker Compose configuration, Flyway database migrations, Kubernetes Kustomize manifests, Terraform infrastructure code, a 9-stage DevSecOps Jenkins CI/CD pipeline, and a comprehensive automated test suite with 109 passing tests.
 
 ---
 
@@ -440,7 +444,7 @@ The single entry point for all client requests, enforcing cross-cutting concerns
 
 **Test coverage:** 17 / 17 Jest tests — JWT auth, revoked token rejection (401), forged token rejection (401), VIEWER→403 on `/simulate`, ADMIN allowed, proxy routing, rate-limit fallback, Prometheus metrics.
 
-### 4.10 CI/CD Pipeline — 8-Stage Jenkins DevSecOps
+### 4.10 CI/CD Pipeline — 9-Stage Jenkins DevSecOps
 
 *(Figure 4.5 — Jenkins 9-stage CI/CD pipeline overview)*
 
@@ -556,7 +560,7 @@ The current package contains the deployment instructions and Compose configurati
 
 | Test ID | Test Action | Expected Result | Evidence |
 |---------|-------------|----------------|---------|
-| T-01 | Run `docker compose up --build -d` and check `docker compose ps` | All 9 services report `healthy` | Verified locally on 2026-11-02: all 9 services healthy |
+| T-01 | Run `docker compose up -d` and check `docker compose ps` | All 9 services report `healthy` | Verified locally on 2026-11-23: all 9 services healthy (frontend :8088, gateway :3000, auth :8081, cluster-sync :8082, topology :8083, simulation :8084, cost-risk :8085, postgres :5432, redis :6379) |
 | T-02 | POST login credentials to `http://localhost:3000/api/v1/auth/login` | HTTP 200; response contains `accessToken` and `role: ADMIN` | Verified locally on 2026-11-01 |
 | T-03 | GET topology with valid ADMIN JWT | HTTP 200; response contains `dataSource: SEED`, 18 nodes, 19 edges | Verified locally on 2026-11-01 |
 | T-04 | GET topology with VIEWER JWT; POST to `/simulate` with VIEWER JWT | Topology: HTTP 200; Simulate: HTTP 403 (RBAC enforced) | Covered by 17/17 Gateway Jest tests |
@@ -680,7 +684,7 @@ The delivered implementation therefore establishes a production-grade Kubernetes
 ### Project Outcomes
 
 - A React 19 SPA with an interactive DAG canvas, role-aware navigation, and a five-section operator interface.
-- A nine-service Docker Compose architecture verified locally with all services reaching `healthy` on 2026-11-02.
+- A nine-service Docker Compose architecture verified locally with all services reaching `healthy` on 2026-11-23.
 - A `SharedIndexInformer`-based cluster state pipeline with staleness detection and auto-reconnect.
 - An in-memory BFS topology graph with blast-radius traversal supporting sub-millisecond queries.
 - A five-check what-if simulation engine with cost delta integration and PostgreSQL audit logging.
