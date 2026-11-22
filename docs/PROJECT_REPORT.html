@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TwinDigital Project Report - Gona Navya Ramani</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+  body {
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    color: #222;
+    line-height: 1.6;
+    max-width: 850px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+  }
+  h1 {
+    color: #0d233a;
+    text-align: center;
+    border-bottom: 2px solid #0d233a;
+    padding-bottom: 12px;
+    margin-top: 30px;
+    font-size: 24pt;
+    text-transform: uppercase;
+  }
+  h2 {
+    color: #1e3a8a;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 6px;
+    margin-top: 36px;
+    page-break-after: avoid;
+    font-size: 16pt;
+  }
+  h3 {
+    color: #334155;
+    margin-top: 24px;
+    page-break-after: avoid;
+    font-size: 13pt;
+  }
+  h4 {
+    color: #475569;
+    margin-top: 18px;
+    page-break-after: avoid;
+    font-size: 11pt;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: 600;
+  }
+  tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  code {
+    background: #f1f5f9;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: Consolas, monospace;
+    font-size: 9pt;
+    color: #0f172a;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: Consolas, monospace;
+    font-size: 8.5pt;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid #cbd5e1;
+    margin: 30px 0;
+  }
+  .print-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    z-index: 9999;
+  }
+  .print-btn:hover {
+    background: #1d4ed8;
+  }
+  @media print {
+    .print-btn { display: none; }
+    body { padding: 0; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">📥 Click to Save as PDF</button>
+<h1>TWINDIGITAL: KUBERNETES DIGITAL TWIN AND WHAT-IF SIMULATION PLATFORM</h1>
+<h3>A containerized Kubernetes operations platform with live topology visualization, blast-radius analysis, and workload simulation</h3>
+<p><strong>Project Name:</strong> TwinDigital</p>
+<hr />
+<p><strong>Institution:</strong> Lovely Professional University  </p>
+<p><strong>Project Deploy Links:</strong><br />
+GitHub: <a href="https://github.com/navyagona/TWINDIGITAL-KUBERNETES-DIGITAL-TWIN-AND-WHAT-IF-SIMULATION-PLATFORM">https://github.com/navyagona/TWINDIGITAL-KUBERNETES-DIGITAL-TWIN-AND-WHAT-IF-SIMULATION-PLATFORM</a><br />
+Docker Registry: Amazon ECR (<code>twindigital/</code>)<br />
+Live Local Endpoints: Web UI (<code>http://localhost:8088</code>), API Gateway (<code>http://localhost:3000</code>)  </p>
+<p><strong>Submitted by:</strong> Gona Navya Ramani<br />
+<strong>Branch:</strong> B.Tech – Computer Science and Engineering<br />
+<strong>Registration:</strong> 12300802<br />
+<strong>Section:</strong> K402311</p>
+<p><strong>Submitted to:</strong><br />
+<strong>Faculty:</strong> Ms. Arshiya<br />
+<strong>Subject:</strong> INT378 (Advancements in Cloud and DevOps)<br />
+<strong>Academic Session:</strong> 2026–2027</p>
+<hr />
+<h2>Certificate</h2>
+<p>This is to certify that the project report entitled <strong>"TwinDigital: Kubernetes Digital Twin and What-If Simulation Platform"</strong> is a record of the project work carried out by the student named below under the guidance and supervision of the undersigned, in partial fulfilment of the academic requirements of the programme.</p>
+<p>The report documents the design, implementation, configuration and verification of the TwinDigital platform and its containerized microservices architecture using Docker Compose, Spring Boot, React, an Express API gateway, Jenkins CI/CD, and Terraform-based Amazon EKS infrastructure.</p>
+<p>To the best of my knowledge, the work presented in this report is suitable for academic evaluation, subject to the institution's prescribed review and assessment process.</p>
+<p>Student Name: Gona Navya Ramani<br />
+Registration / Roll Number: 12300802<br />
+Date: 21-11-2026</p>
+<hr />
+<h2>Student Declaration</h2>
+<p>I hereby declare that the project report entitled <strong>"TwinDigital: Kubernetes Digital Twin and What-If Simulation Platform"</strong> submitted in partial fulfilment of the requirements for the subject INT378 (Advancements in Cloud and DevOps) is my own original work and has not been submitted elsewhere for any other degree or examination.</p>
+<p>All sources of information and references used in the preparation of this report have been duly acknowledged.</p>
+<p>Student Name: Gona Navya Ramani<br />
+Registration Number: 12300802<br />
+Date: 21-11-2026</p>
+<hr />
+<h2>Acknowledgement</h2>
+<p>I express my sincere gratitude to my project supervisor and faculty members for their guidance, technical suggestions and support throughout the development of TwinDigital. Their feedback helped shape the project structure and improve the clarity of the implementation and its documentation.</p>
+<p>I also acknowledge the maintainers of Spring Boot, React, Docker, Kubernetes, Terraform, Jenkins, Prometheus, Grafana, and the wider open-source ecosystem. Their software and technical documentation form the foundation of the containerized microservices and cloud infrastructure architecture used in this project.</p>
+<p>Finally, I thank my peers and everyone who provided feedback during the development, local execution and review of the project.</p>
+<p>Student Name: Gona Navya Ramani<br />
+Date: 21-11-2026</p>
+<hr />
+<h2>Abstract</h2>
+<p>TwinDigital is a cloud-native, Kubernetes operations platform that combines a live cluster topology interface with a containerized microservices backend. The delivered implementation serves a React 19 Single-Page Application through an Express API gateway and collects live Kubernetes cluster state through a Java-based synchronization service. Prometheus and Grafana are integrated for infrastructure observability, while a five-check what-if simulation engine allows engineers to validate proposed workload changes before applying them to production.</p>
+<p>The web interface is organised into five operator-facing areas: Topology Graph, What-If Simulation Workbench, Cost and Right-Sizing Dashboard, Cluster Sync Status, and Authentication. These areas provide a unified navigation structure for reviewing the platform's Kubernetes monitoring and simulation workflows. The backend independently provides measurable Kubernetes resource metrics, topology graph data, simulation outcomes, cost estimates, and security audit trails.</p>
+<p>The implementation is packaged with Docker Compose as nine services: PostgreSQL, Redis, cluster-sync-service, auth-service, topology-service, simulation-service, cost-risk-service, the Express gateway, and the React frontend. A dedicated Docker network connects the containers, and named volumes preserve PostgreSQL and Redis data across container recreation. All services use restart policies and Spring Boot Actuator health probes.</p>
+<p>The report explains the system architecture, implementation details, deployment procedure, testing and validation approach, security design, and extension roadmap. It distinguishes live Kubernetes topology data from simulation outcomes and cost estimates, so that the project's implemented capabilities are described precisely.</p>
+<p><strong>Keywords:</strong> TwinDigital, Kubernetes, digital twin, Docker Compose, Spring Boot, React, microservices, what-if simulation, blast radius, Terraform, EKS, Jenkins, DevSecOps, Prometheus, Grafana, topology graph.</p>
+<p><strong>IMPLEMENTATION SUMMARY:</strong> The delivered package includes the React frontend, five Spring Boot Java microservices, an Express API gateway, Docker Compose configuration, Flyway database migrations, Kubernetes Kustomize manifests, Terraform infrastructure code, a 9-stage DevSecOps Jenkins CI/CD pipeline, and a comprehensive automated test suite with 109 passing tests.</p>
+<hr />
+<h2>Table of Contents</h2>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Page</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Certificate</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Student Declaration</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Acknowledgement</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Abstract</td>
+<td>5</td>
+</tr>
+<tr>
+<td>1. Introduction</td>
+<td>7</td>
+</tr>
+<tr>
+<td>2. Requirements and Technology Stack</td>
+<td>10</td>
+</tr>
+<tr>
+<td>3. System Architecture and Design</td>
+<td>12</td>
+</tr>
+<tr>
+<td>4. Implementation Details</td>
+<td>15</td>
+</tr>
+<tr>
+<td>5. Deployment and Operation</td>
+<td>22</td>
+</tr>
+<tr>
+<td>6. Testing and Validation</td>
+<td>24</td>
+</tr>
+<tr>
+<td>7. Security, Reliability and Maintenance</td>
+<td>26</td>
+</tr>
+<tr>
+<td>8. Scope Boundaries and Future Enhancements</td>
+<td>28</td>
+</tr>
+<tr>
+<td>9. Conclusion</td>
+<td>30</td>
+</tr>
+<tr>
+<td>References and Appendices</td>
+<td>31</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>List of Figures</h2>
+<table>
+<thead>
+<tr>
+<th>Figure</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Figure 3.1</td>
+<td>TwinDigital high-level system architecture</td>
+</tr>
+<tr>
+<td>Figure 3.2</td>
+<td>Microservices and data flow diagram</td>
+</tr>
+<tr>
+<td>Figure 3.3</td>
+<td>Docker Compose service topology</td>
+</tr>
+<tr>
+<td>Figure 4.1</td>
+<td>React frontend — Topology Graph canvas</td>
+</tr>
+<tr>
+<td>Figure 4.2</td>
+<td>What-If Simulation Workbench interface</td>
+</tr>
+<tr>
+<td>Figure 4.3</td>
+<td>Kubernetes cluster-sync informer event flow</td>
+</tr>
+<tr>
+<td>Figure 4.4</td>
+<td>BFS blast-radius traversal algorithm</td>
+</tr>
+<tr>
+<td>Figure 4.5</td>
+<td>Jenkins 9-stage CI/CD pipeline overview</td>
+</tr>
+<tr>
+<td>Figure 4.6</td>
+<td>Grafana monitoring dashboard panels</td>
+</tr>
+<tr>
+<td>Figure 6.1</td>
+<td>Docker Compose service health verification</td>
+</tr>
+<tr>
+<td>Figure 6.2</td>
+<td>Gateway login and topology API response</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Chapter 1: Introduction</h2>
+<h3>Project context, motivation and intended outcomes</h3>
+<h4>1.1 Background</h4>
+<p>Modern production systems deployed on Kubernetes present significant operational challenges. Platform Engineers and Site Reliability Engineers (SREs) must manage dozens of interdependent microservices running across multiple nodes, namespaces and availability zones. A single misconfiguration — such as an incorrect resource request, a missing memory limit, or a node drain that violates a PodDisruptionBudget — can cascade into widespread service disruption affecting hundreds of downstream callers.</p>
+<p>TwinDigital addresses this by acting as a <strong>digital twin</strong> of the Kubernetes cluster: it continuously mirrors live cluster state, constructs a dependency graph, and exposes a simulation engine that lets engineers ask "what would happen if I made this change?" before committing it to production. The architecture separates live state synchronization, graph construction, simulation logic, cost analysis, and authentication into dedicated microservices. This separation makes the platform easier to operate and extend because each service has a defined responsibility and communicates over well-defined APIs.</p>
+<h4>1.2 Project Overview</h4>
+<p>The user-facing application is a React 19 Single-Page Application built with TypeScript, Vite, and ReactFlow. It presents an interactive DAG (Directed Acyclic Graph) canvas where each Kubernetes resource — Node, Pod, Deployment, Service — is rendered as a graph node with dependency edges connecting them. The frontend polls the API gateway every five seconds for topology updates and renders blast-radius highlights when a node is selected.</p>
+<p>For infrastructure synchronization, the cluster-sync-service uses the Kubernetes Java Client <code>SharedIndexInformer</code> to receive live Add, Update and Delete events from the EKS control plane. These events are persisted to PostgreSQL, from where the topology-service builds the in-memory graph. The simulation-service runs five independent check engines against this graph when an engineer submits a proposed change. The cost-risk-service provides Prometheus-based utilization data and AWS Cost Explorer billing estimates.</p>
+<h4>1.3 Motivation</h4>
+<p>The project addresses three unmet needs in Kubernetes operations:</p>
+<ul>
+<li><strong>Topology blindness:</strong> Teams lack a live, visual map of how services depend on each other, making it difficult to predict the downstream blast radius of a change.</li>
+<li><strong>Costly misconfiguration:</strong> A pod resource misconfiguration can trigger a cascade of pod evictions, PodDisruptionBudget violations, or HPA misfires that are expensive to diagnose after the fact.</li>
+<li><strong>Invisible cost drift:</strong> Kubernetes resource over-provisioning silently inflates AWS billing. Right-sizing recommendations require cross-referencing Prometheus utilization data with Cost Explorer, a process that is typically manual and error-prone.</li>
+</ul>
+<p>TwinDigital integrates these concerns — topology visualization, pre-deployment simulation, and cost visibility — into a single operator platform.</p>
+<h4>1.4 Intended Users</h4>
+<p>The primary users are Platform Engineers, SREs, and DevOps practitioners who manage production Kubernetes clusters and need to validate changes safely before applying them. Secondary users include technical reviewers and students who want to explore the platform's architecture, verify service availability, and understand the relationship between the microservices, the Kubernetes API, and the monitoring pipeline.</p>
+<h4>1.5 Problem Definition</h4>
+<p>A Kubernetes operations interface without live cluster state synchronization offers limited visibility into actual runtime behavior. Conversely, raw Kubernetes metrics are difficult to interpret without a topology graph and a simulation layer. TwinDigital addresses this by combining a live cluster mirror with an interactive topology canvas, a what-if simulation engine, and an integrated cost-risk analysis dashboard.</p>
+<h4>1.6 Aim</h4>
+<p>To design and implement a containerized TwinDigital Kubernetes digital twin platform with live cluster state synchronization, interactive topology visualization, five-check what-if simulation, integrated cost and right-sizing analysis, and a full DevSecOps CI/CD pipeline on Amazon EKS.</p>
+<h4>1.7 Objectives</h4>
+<ul>
+<li>Provide a React SPA with an interactive DAG topology canvas for visualizing live Kubernetes resources and dependency edges.</li>
+<li>Synchronize live Kubernetes cluster state using <code>SharedIndexInformer</code> (List + Watch) and persist it to PostgreSQL.</li>
+<li>Expose blast-radius analysis through in-memory BFS graph traversal in the topology-service.</li>
+<li>Implement a five-check what-if simulation engine: SchedulingFit, LimitSanity, NodeRemovalImpact, HpaImpact, and BlastRadius.</li>
+<li>Integrate Prometheus PromQL utilization queries and AWS Cost Explorer for right-sizing and cost delta estimates.</li>
+<li>Secure all APIs with JWT-based RBAC (ADMIN / VIEWER roles) enforced at the Express gateway layer.</li>
+<li>Package all services and configuration through Docker Compose with health checks and named volumes.</li>
+<li>Build an 8-stage Jenkins DevSecOps CI/CD pipeline with SAST, SCA, container scanning, and DAST security gates.</li>
+<li>Provision production infrastructure on Amazon EKS using Terraform IaC and Kustomize manifests.</li>
+</ul>
+<h4>1.8 Scope of the Delivered Implementation</h4>
+<p>The delivered package covers the React frontend SPA, five Spring Boot Java microservices, the Express API gateway, PostgreSQL and Redis backing stores, Docker Compose local orchestration, Kubernetes Kustomize manifests, Terraform IaC, a Jenkins CI/CD pipeline, and a comprehensive automated test suite.</p>
+<p>Live EKS cluster connection, Prometheus metric history, and AWS Cost Explorer credentials are external dependencies that are not provisioned by Docker Compose. Without a <code>KUBECONFIG_BASE64</code> value, the topology-service returns its built-in seeded demo graph with 18 nodes and 19 edges. The platform is verified locally with all nine Compose services reaching healthy and 109 automated tests passing at 100%.</p>
+<hr />
+<h2>Chapter 2: Requirements and Technology Stack</h2>
+<h3>2.1 Software and Platform Components</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Technology / Version</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TwinDigital frontend</td>
+<td>React 19, TypeScript, Vite, ReactFlow</td>
+<td>Interactive DAG topology canvas and operator workflows</td>
+</tr>
+<tr>
+<td>API gateway</td>
+<td>Express.js (Node 20)</td>
+<td>JWT validation, RBAC, rate limiting, request routing</td>
+</tr>
+<tr>
+<td>auth-service</td>
+<td>Spring Boot 3.3, Java 17</td>
+<td>BCrypt passwords, JWT issuance, RBAC roles, refresh tokens</td>
+</tr>
+<tr>
+<td>cluster-sync-service</td>
+<td>Spring Boot 3.3, Kubernetes Java Client</td>
+<td>List+Watch informers, PostgreSQL state persistence</td>
+</tr>
+<tr>
+<td>topology-service</td>
+<td>Spring Boot 3.3, in-memory BFS</td>
+<td>Directed graph construction, blast-radius traversal</td>
+</tr>
+<tr>
+<td>simulation-service</td>
+<td>Spring Boot 3.3, five check engines</td>
+<td>What-if simulation, cost delta, audit logging</td>
+</tr>
+<tr>
+<td>cost-risk-service</td>
+<td>Spring Boot 3.3, Prometheus, AWS SDK</td>
+<td>PromQL utilization queries, right-sizing, AWS billing</td>
+</tr>
+<tr>
+<td>Container orchestration</td>
+<td>Docker Engine, Docker Compose</td>
+<td>Service lifecycle, networking, volumes, health checks</td>
+</tr>
+<tr>
+<td>Relational database</td>
+<td>PostgreSQL 15</td>
+<td>Cluster snapshots, simulation audit logs, user credentials</td>
+</tr>
+<tr>
+<td>Distributed cache</td>
+<td>Redis 7</td>
+<td>Refresh tokens, rate-limit counters</td>
+</tr>
+<tr>
+<td>Infrastructure as Code</td>
+<td>HashiCorp Terraform</td>
+<td>Amazon VPC, EKS, RDS, ElastiCache, IAM, ECR</td>
+</tr>
+<tr>
+<td>Kubernetes manifests</td>
+<td>Kustomize (base + overlays)</td>
+<td>Staging and production Kubernetes deployment</td>
+</tr>
+<tr>
+<td>CI/CD pipeline</td>
+<td>Jenkins (8-stage Declarative)</td>
+<td>Build, test, scan, push, deploy</td>
+</tr>
+<tr>
+<td>Container scanning</td>
+<td>Trivy</td>
+<td>HIGH/CRITICAL CVE detection in container images</td>
+</tr>
+<tr>
+<td>SAST</td>
+<td>SonarQube</td>
+<td>Static code quality and security hotspot analysis</td>
+</tr>
+<tr>
+<td>SCA</td>
+<td>OWASP Dependency-Check</td>
+<td>Third-party dependency CVE scanning</td>
+</tr>
+<tr>
+<td>DAST</td>
+<td>OWASP ZAP</td>
+<td>Dynamic application security testing</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>kube-prometheus-stack</td>
+<td>Prometheus, Grafana, Alertmanager, cAdvisor</td>
+</tr>
+<tr>
+<td>Load testing</td>
+<td>k6</td>
+<td>Gateway stress test scripting to 1,000 req/s</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 Functional Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-01</td>
+<td>Serve the TwinDigital SPA over HTTP through the gateway</td>
+<td>Frontend accessible on host port 8088; gateway on port 3000</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>Authenticate users and issue JWT tokens with RBAC roles</td>
+<td>Login endpoint returns <code>accessToken</code> with <code>ADMIN</code> or <code>VIEWER</code> role</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>Synchronize Kubernetes cluster state to PostgreSQL</td>
+<td>cluster-sync-service persists Nodes, Pods, Deployments, Services, HPAs, PDBs</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>Provide a topology graph with blast-radius analysis</td>
+<td>topology-service returns directed graph; BFS highlights upstream and downstream services</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Execute five-check what-if simulation on proposed changes</td>
+<td>simulation-service returns check results for SchedulingFit, LimitSanity, NodeRemovalImpact, HpaImpact, BlastRadius</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>Provide cost and right-sizing recommendations</td>
+<td>cost-risk-service returns PromQL p95 utilization and AWS Cost Explorer billing data</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>Rate-limit API requests using Redis-backed counters</td>
+<td>Gateway enforces 60 req/min per IP; falls back to in-memory store on Redis outage</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>Build, scan, and deploy images through an automated CI/CD pipeline</td>
+<td>Jenkins pipeline passes all security gates and deploys to EKS via Kustomize</td>
+</tr>
+</tbody>
+</table>
+<h3>2.3 Non-Functional Requirements</h3>
+<ul>
+<li><strong>Security:</strong> JWT-based RBAC on all protected routes; BCrypt password hashing; IRSA tokenless AWS API access; non-root containers; Trivy/SonarQube/OWASP security gates in CI.</li>
+<li><strong>Maintainability:</strong> Flyway-versioned database migrations; ADR-documented architectural decisions; Kustomize overlay separation for staging and production.</li>
+<li><strong>Portability:</strong> Nine-service Docker Compose stack for local development; Kustomize manifests for Kubernetes deployment; Terraform for repeatable cloud provisioning.</li>
+<li><strong>Observability:</strong> Spring Boot Actuator health endpoints on all services; Prometheus Micrometer metrics; Grafana dashboards; structured gateway request tracing.</li>
+<li><strong>Persistence:</strong> PostgreSQL named volume for cluster snapshots and audit logs; Redis named volume for token and rate-limit state.</li>
+<li><strong>Operational stability:</strong> All Compose services use <code>restart: unless-stopped</code> and health-check probes; CI pipeline has automatic rollback on deployment failure.</li>
+</ul>
+<hr />
+<h2>Chapter 3: System Architecture and Design</h2>
+<h3>3.1 Architecture Overview</h3>
+<p>TwinDigital uses a <strong>multi-tier microservices architecture</strong> deployed on Amazon EKS in the <code>ap-south-1</code> region. The platform separates concerns across five layers: a React SPA frontend, an Express API gateway, five Java Spring Boot microservices, PostgreSQL and Redis backing stores, and live AWS telemetry sources.</p>
+<p><em>(Figure 3.1 — TwinDigital high-level system architecture)</em></p>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph ClientLayer [&quot;Client &amp; Ingress Layer&quot;]
+        User[&quot;Platform Engineer / SRE&quot;]
+        Ingress[&quot;AWS ALB / Nginx Ingress (TLS)&quot;]
+        Frontend[&quot;Frontend SPA\nReact 19 + Vite + ReactFlow\n5-Second REST Polling&quot;]
+    end
+    subgraph GatewayLayer [&quot;Edge &amp; Security Gateway&quot;]
+        Gateway[&quot;API Gateway\nExpress on Node 20\nJWT · RBAC · Rate Limiting · Tracing&quot;]
+    end
+    subgraph Services [&quot;Five Java Microservices — Spring Boot 3.3 / Java 17&quot;]
+        AuthSvc[&quot;auth-service :8081\nBCrypt · JWT · Roles · Refresh Tokens&quot;]
+        SyncSvc[&quot;cluster-sync-service :8082\nK8s Informers List+Watch · PostgreSQL&quot;]
+        TopoSvc[&quot;topology-service :8083\nIn-Memory BFS · Blast Radius&quot;]
+        SimSvc[&quot;simulation-service :8084\n5 Checks · Cost Delta · Audit Log&quot;]
+        CostSvc[&quot;cost-risk-service :8085\nPromQL 7d p95 · AWS Cost Explorer&quot;]
+    end
+    subgraph Stores [&quot;Persistence &amp; Cache&quot;]
+        PG[(&quot;PostgreSQL 15\nCluster Snapshots · Audits&quot;)]
+        RD[(&quot;Redis 7\nTokens · Rate Limits&quot;)]
+    end
+    subgraph Cloud [&quot;Live AWS Telemetry&quot;]
+        EKS[&quot;EKS Control Plane\nNodes · Pods · HPAs · PDBs&quot;]
+        Prom[&quot;Prometheus\ncAdvisor · Node Exporter&quot;]
+        CE[&quot;AWS Cost Explorer\nIRSA · Caffeine Cache&quot;]
+    end
+    User --&gt; Ingress --&gt; Frontend --&gt; Gateway
+    Gateway --&gt; AuthSvc --&gt; PG
+    Gateway --&gt; SyncSvc --&gt; EKS
+    Gateway --&gt; TopoSvc
+    Gateway --&gt; SimSvc --&gt; TopoSvc
+    Gateway --&gt; CostSvc --&gt; Prom
+    SyncSvc --&gt; PG
+    SimSvc --&gt; PG
+    SimSvc --&gt; CostSvc --&gt; CE
+    AuthSvc --&gt; RD
+    Gateway --&gt; RD
+</code></pre>
+<h3>3.2 Architectural Layers</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Components</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Presentation layer</strong></td>
+<td>React 19 SPA + ReactFlow</td>
+<td>Interactive DAG canvas; polls topology every 5 seconds; role-aware UI</td>
+</tr>
+<tr>
+<td><strong>Gateway layer</strong></td>
+<td>Express on Node 20</td>
+<td>JWT validation, RBAC, Redis rate limiting, proxy routing, Prometheus metrics</td>
+</tr>
+<tr>
+<td><strong>Service layer</strong></td>
+<td>5 × Spring Boot 3.3</td>
+<td>Auth, Cluster Sync, Topology, Simulation, Cost-Risk; each with Actuator health</td>
+</tr>
+<tr>
+<td><strong>Persistence layer</strong></td>
+<td>PostgreSQL 15 + Redis 7</td>
+<td>Cluster snapshots, audit logs, refresh tokens, rate-limit counters</td>
+</tr>
+<tr>
+<td><strong>Cloud telemetry layer</strong></td>
+<td>EKS + Prometheus + AWS CE</td>
+<td>Live Kubernetes control plane, PromQL utilization, AWS billing API</td>
+</tr>
+</tbody>
+</table>
+<p><em>(Figure 3.2 — Microservices and data flow diagram)</em></p>
+<h3>3.3 Data Flow</h3>
+<p>A browser request reaches the React SPA through host port 8088. The SPA sends REST requests to the Express gateway on port 3000, which validates the JWT, enforces RBAC, and proxies the request to the appropriate downstream service. The cluster-sync-service continuously receives <code>Add</code>, <code>Update</code>, and <code>Delete</code> delta events from the EKS control plane via a long-lived HTTP Watch stream, persists each resource change to PostgreSQL, and marks its status as <code>STALE</code> if the Watch stream drops. The topology-service reads the latest cluster snapshot from PostgreSQL, assembles an in-memory directed graph, and executes BFS traversal for blast-radius requests. The simulation-service runs five independent check engines against that graph when an engineer submits a proposed change, then calls the cost-risk-service for a monthly cost delta estimate and persists the simulation outcome to the PostgreSQL audit log.</p>
+<p><em>(Figure 3.3 — Docker Compose service topology)</em></p>
+<h3>3.4 Docker Compose Service Map</h3>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Container Name</th>
+<th>Port Mapping</th>
+<th>Depends On</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>postgres</td>
+<td>twindigital-postgres</td>
+<td>5432 → 5432</td>
+<td>—</td>
+</tr>
+<tr>
+<td>redis</td>
+<td>twindigital-redis</td>
+<td>6379 → 6379</td>
+<td>—</td>
+</tr>
+<tr>
+<td>cluster-sync</td>
+<td>twindigital-cluster-sync</td>
+<td>8082 → 8082</td>
+<td>postgres (healthy)</td>
+</tr>
+<tr>
+<td>auth-service</td>
+<td>twindigital-auth-service</td>
+<td>8081 → 8081</td>
+<td>postgres, redis (healthy)</td>
+</tr>
+<tr>
+<td>topology-service</td>
+<td>twindigital-topology-service</td>
+<td>8083 → 8083</td>
+<td>cluster-sync (healthy)</td>
+</tr>
+<tr>
+<td>cost-risk-service</td>
+<td>twindigital-cost-risk-service</td>
+<td>8085 → 8085</td>
+<td>cluster-sync (healthy)</td>
+</tr>
+<tr>
+<td>simulation</td>
+<td>twindigital-simulation</td>
+<td>8084 → 8084</td>
+<td>postgres, cluster-sync, topology, cost-risk (healthy)</td>
+</tr>
+<tr>
+<td>gateway</td>
+<td>twindigital-gateway</td>
+<td>3000 → 3000</td>
+<td>auth, redis, cluster-sync, simulation, topology, cost-risk (healthy)</td>
+</tr>
+<tr>
+<td>frontend</td>
+<td>twindigital-frontend</td>
+<td>8088 → 8080</td>
+<td>gateway (healthy)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Docker network:</strong> default Compose bridge. <strong>Named volumes:</strong> <code>postgres_data</code>, <code>redis_data</code>.</p>
+<h3>3.5 Service Dependencies</h3>
+<p>cluster-sync initializes the shared cluster tables that topology, simulation, and cost-risk read. The gateway waits for auth and all backend APIs before accepting traffic. The frontend waits for the gateway. These Compose <code>depends_on: condition: service_healthy</code> declarations establish a deterministic startup order verified by Spring Boot Actuator <code>/actuator/health</code> probes on each Java service and a <code>wget</code> probe on the gateway and frontend.</p>
+<hr />
+<h2>Chapter 4: Implementation Details</h2>
+<h3>4.1 Frontend — React 19 + Vite + ReactFlow</h3>
+<p>The frontend is implemented using TypeScript source files compiled by Vite and served by an Nginx container on port 8088. ReactFlow renders the Kubernetes topology as an interactive DAG canvas. The HTML defines the page structure, TypeScript modules control navigation, chart rendering, search and filter interactions, simulation form submission, and role-aware route guards.</p>
+<p><em>(Figure 4.1 — React frontend — Topology Graph canvas)</em></p>
+<h4>4.2 Main Interface Modules</h4>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Implemented Capabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Topology Graph</strong></td>
+<td>Interactive DAG canvas using ReactFlow; nodes represent Kubernetes resources (Nodes, Pods, Deployments, Services); dependency edges connect them; 5-second polling for live updates; click-to-highlight blast-radius</td>
+</tr>
+<tr>
+<td><strong>What-If Simulation Workbench</strong></td>
+<td>Form to submit proposed resource changes (CPU/memory requests and limits, replica counts, node removal); displays five-check results (PASS/FAIL per check) and monthly cost delta; protected — ADMIN role only</td>
+</tr>
+<tr>
+<td><strong>Cost &amp; Right-Sizing Dashboard</strong></td>
+<td>Prometheus p95 utilization per pod; right-sizing recommendations; AWS Cost Explorer monthly spend; Caffeine-cached to reduce API calls</td>
+</tr>
+<tr>
+<td><strong>Cluster Sync Status</strong></td>
+<td>Live display of cluster-sync health (<code>SYNCED</code> / <code>STALE</code>), last sync time, and resource counts per type</td>
+</tr>
+<tr>
+<td><strong>Authentication</strong></td>
+<td>Login form; JWT stored in memory; role-aware navigation (VIEWER cannot access <code>/simulate</code> routes)</td>
+</tr>
+</tbody>
+</table>
+<p>Build verification: TypeScript compilation 0 errors, oxlint 0 errors, 3 warnings (React effect dependency warnings in non-critical hooks). Production build passes cleanly.</p>
+<p><em>(Figure 4.2 — What-If Simulation Workbench interface)</em></p>
+<h3>4.3 Docker Compose Services</h3>
+<p>The Compose file defines nine application services on a shared bridge network. Each Java service is built from its own multi-stage Dockerfile. The gateway is built from the <code>gateway/</code> directory and the frontend from <code>frontend/</code>. PostgreSQL and Redis use official Alpine images. All services specify <code>restart: unless-stopped</code>, <code>healthcheck</code> probes, and receive secrets exclusively through environment variables — no credentials are hardcoded in any image.</p>
+<h3>4.4 auth-service — Spring Boot 3.3 (:8081)</h3>
+<p>Provides authentication and authorization for the entire platform.</p>
+<ul>
+<li>BCrypt password hashing for secure credential storage</li>
+<li>JWT issuance (<code>HS256</code>) with configurable expiry; refresh token lifecycle stored in Redis with TTL</li>
+<li>Role model: <code>ADMIN</code> (full access including <code>/simulate</code>) and <code>VIEWER</code> (read-only topology and cost views)</li>
+<li>Bootstrap admin user created from <code>BOOTSTRAP_ADMIN_USERNAME</code> and <code>BOOTSTRAP_ADMIN_PASSWORD</code> environment variables at startup</li>
+<li>Flyway-managed schema (<code>users</code>, <code>roles</code>, <code>refresh_tokens</code> tables)</li>
+</ul>
+<p><strong>Test coverage:</strong> 19 / 19 tests — <code>AuthServiceTest</code>, <code>JwtTokenProviderTest</code>, <code>AuthServiceApplicationTest</code>, <code>AdminUserBootstrapTest</code>.</p>
+<h3>4.5 cluster-sync-service — Spring Boot 3.3 (:8082)</h3>
+<p>The foundational data ingestion pipeline. Mirrors live Amazon EKS cluster state to PostgreSQL using the Kubernetes Java Client <code>SharedIndexInformer</code> (List + Watch pattern).</p>
+<p><em>(Figure 4.3 — Kubernetes cluster-sync informer event flow)</em></p>
+<p><strong>Synchronized resource types:</strong> Nodes, Pods, Deployments, ReplicaSets, Services, Endpoints, HorizontalPodAutoscalers (HPAs), PodDisruptionBudgets (PDBs).</p>
+<p><strong>Event handler pattern:</strong></p>
+<pre><code class="language-java">podInformer.addEventHandler(new ResourceEventHandler&lt;V1Pod&gt;() {
+    @Override public void onAdd(V1Pod pod)                      { syncPod(pod); }
+    @Override public void onUpdate(V1Pod old, V1Pod cur)        { syncPod(cur); }
+    @Override public void onDelete(V1Pod pod, boolean unknown)  { deletePod(pod); }
+});
+</code></pre>
+<p>If the Watch stream drops, the service marks cluster status as <code>STALE</code> and reports sync lag via <code>/api/v1/cluster/status</code>, then reconnects using HTTP <code>resourceVersion</code> resumption. Without <code>KUBECONFIG_BASE64</code>, the service starts but cannot connect to a live cluster.</p>
+<p><strong>Test coverage:</strong> 25 / 25 tests — <code>SyncControllerTest</code>, <code>ClusterSyncMetricsTest</code>, <code>KubernetesResourceMapperTest</code>, <code>KubernetesResourcePersisterTest</code>, <code>SyncHealthTrackerTest</code>.</p>
+<h3>4.6 topology-service — Spring Boot 3.3 (:8083)</h3>
+<p>Builds and serves the cluster topology graph from stored cluster resources and exposes a blast-radius traversal API.</p>
+<ol>
+<li>Reads normalized cluster entities from PostgreSQL (<code>td_services</code>, <code>td_deployments</code>, <code>td_pods</code>, <code>td_nodes</code>, <code>td_service_dependencies</code>)</li>
+<li>Assembles an in-memory directed graph</li>
+<li>Executes dual-queue <strong>Breadth-First Search (BFS)</strong> in both upstream and downstream directions for blast-radius computation</li>
+</ol>
+<p><em>(Figure 4.4 — BFS blast-radius traversal algorithm)</em></p>
+<pre><code class="language-java">Queue&lt;String&gt; upQueue = new LinkedList&lt;&gt;();
+upQueue.add(targetNode.getId());
+while (!upQueue.isEmpty()) {
+    String curr = upQueue.poll();
+    for (String caller : incomingDependencies.getOrDefault(curr, Collections.emptyList())) {
+        if (!caller.equals(targetNode.getId()) &amp;&amp; upstreamIds.add(caller)) {
+            upQueue.add(caller);
+        }
+    }
+}
+</code></pre>
+<p>Without a live cluster, topology falls back to a seeded demo graph with <strong>18 nodes and 19 edges</strong> (<code>dataSource: SEED</code>). Verified locally on 2026-11-01.</p>
+<p><strong>Test coverage:</strong> 8 / 8 tests — <code>TopologyControllerTest</code>, <code>TopologyGraphServiceTest</code>.</p>
+<h3>4.7 simulation-service — Spring Boot 3.3 (:8084)</h3>
+<p>The what-if simulation engine that evaluates proposed Kubernetes resource changes against five independent check modules.</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. SchedulingFit</strong></td>
+<td>Bin-packing simulation: verifies all pods can be placed on worker nodes given allocatable CPU and memory minus existing pod requests</td>
+</tr>
+<tr>
+<td><strong>2. LimitSanity</strong></td>
+<td>Rejects invalid configurations: <code>limit &lt; request</code>, <code>request &gt; largest node</code>, missing memory limit, extreme CPU/memory ratio</td>
+</tr>
+<tr>
+<td><strong>3. NodeRemovalImpact</strong></td>
+<td>Simulates draining a node: checks whether displaced pods can reschedule elsewhere while respecting all PodDisruptionBudgets</td>
+</tr>
+<tr>
+<td><strong>4. HpaImpact</strong></td>
+<td>Checks whether proposed resource changes make HPA <code>minReplicas</code> and <code>maxReplicas</code> feasible within current cluster headroom</td>
+</tr>
+<tr>
+<td><strong>5. BlastRadius</strong></td>
+<td>Queries topology-service's BFS model and returns all dependent services that would be impacted by the proposed change</td>
+</tr>
+</tbody>
+</table>
+<p>The service calls cost-risk-service for a monthly cost delta estimate on each simulation and persists all simulation inputs and outcomes to PostgreSQL (<code>simulation_audit</code> table). The <code>/api/v1/simulate</code> endpoint is protected by gateway RBAC — <code>VIEWER</code> role receives HTTP 403.</p>
+<p><strong>Test coverage:</strong> 25 / 25 tests — <code>SimulationChecksUnitTest</code>, <code>SimulationControllerTest</code>, <code>CostOptimizationServiceTest</code>, <code>SimulationBddScenariosTest</code>.</p>
+<h3>4.8 cost-risk-service — Spring Boot 3.3 (:8085)</h3>
+<p>Provides cost visibility and right-sizing recommendations by integrating with Prometheus and AWS Cost Explorer.</p>
+<ul>
+<li>Queries Prometheus with PromQL for 7-day p95 CPU and memory utilization per pod</li>
+<li>Computes right-sizing recommendations (request and limit adjustments to match actual p95 utilization)</li>
+<li>Integrates with AWS Cost Explorer API using IRSA credentials for per-service billing data</li>
+<li>Uses Caffeine in-memory cache to reduce repeated Cost Explorer API calls</li>
+<li>Exposes Micrometer metrics for observability</li>
+</ul>
+<p>Requires <code>PROMETHEUS_URL</code> and AWS IRSA credentials for live data. Starts and returns partial data without them.</p>
+<p><strong>Test coverage:</strong> 15 / 15 tests — <code>AwsCostExplorerClientTest</code>, <code>PrometheusClientTest</code>, <code>CostRiskControllerTest</code>, <code>CostRiskServiceTest</code>.</p>
+<h3>4.9 API Gateway — Express on Node 20 (:3000)</h3>
+<p>The single entry point for all client requests, enforcing cross-cutting concerns:</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JWT Verification</td>
+<td>Validates HS256 signed JWTs from auth-service on every protected request</td>
+</tr>
+<tr>
+<td>RBAC</td>
+<td>Rejects <code>VIEWER</code> role on <code>/simulate</code> routes with HTTP 403</td>
+</tr>
+<tr>
+<td>Rate Limiting</td>
+<td>Redis-backed sliding window: 60 req/min per IP, 120 req/min per user; in-memory fallback on Redis outage (<code>passOnStoreError: true</code>)</td>
+</tr>
+<tr>
+<td>Proxy Routing</td>
+<td>Routes <code>/api/v1/auth/*</code>, <code>/api/v1/topology</code>, <code>/api/v1/simulate</code>, <code>/api/v1/cost/*</code>, <code>/api/v1/cluster/*</code> to downstream services</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>Exposes Prometheus <code>/metrics</code> via <code>prom-client</code>; attaches <code>X-Request-ID</code> for distributed trace correlation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Test coverage:</strong> 17 / 17 Jest tests — JWT auth, revoked token rejection (401), forged token rejection (401), VIEWER→403 on <code>/simulate</code>, ADMIN allowed, proxy routing, rate-limit fallback, Prometheus metrics.</p>
+<h3>4.10 CI/CD Pipeline — 9-Stage Jenkins DevSecOps</h3>
+<p><em>(Figure 4.5 — Jenkins 9-stage CI/CD pipeline overview)</em></p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Tool</th>
+<th>Gate Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Checkout</td>
+<td>Git</td>
+<td>Maps <code>DEPLOY_ENV</code> to <code>staging</code>/<code>prod</code> Kustomize overlay; sets <code>GIT_SHORT_SHA</code></td>
+</tr>
+<tr>
+<td>2. Maven Build &amp; Unit Tests</td>
+<td>Maven 3.9 + JUnit</td>
+<td>All 5 services in parallel; publishes JUnit XML; fails on test failure</td>
+</tr>
+<tr>
+<td>3. OWASP Dependency-Check (SCA)</td>
+<td>OWASP Dep-Check</td>
+<td>Fails on any dependency with CVSS ≥ 7.0</td>
+</tr>
+<tr>
+<td>4. SonarQube SAST + Quality Gate</td>
+<td>SonarQube</td>
+<td>Fails if Quality Gate status ≠ OK across all 5 services</td>
+</tr>
+<tr>
+<td>5. Docker Multi-Stage Build</td>
+<td>Docker</td>
+<td>Builds 7 minimal unprivileged images tagged with Git short SHA</td>
+</tr>
+<tr>
+<td>6. Trivy Container Scan</td>
+<td>Trivy</td>
+<td>Fails on any CRITICAL unfixed CVE across all 7 images</td>
+</tr>
+<tr>
+<td>7. Push to Amazon ECR</td>
+<td>AWS ECR + IRSA</td>
+<td>Tokenless ECR push via <code>aws ecr get-login-password</code>; no static credentials</td>
+</tr>
+<tr>
+<td>8. OWASP ZAP DAST Scan</td>
+<td>OWASP ZAP</td>
+<td>Advisory baseline scan against staging; archives HTML/JSON reports</td>
+</tr>
+<tr>
+<td>9. Deploy to EKS</td>
+<td>kubectl + Kustomize</td>
+<td>Rolling update with <code>--timeout=180s</code>; <code>kubectl rollout undo</code> on failure</td>
+</tr>
+</tbody>
+</table>
+<h3>4.11 Grafana Monitoring Dashboard</h3>
+<p>The kube-prometheus-stack Helm chart provisions Prometheus, Grafana, Alertmanager, cAdvisor, and Node Exporter. The Grafana datasource is provisioned with Prometheus at <code>http://prometheus:9090</code>.</p>
+<p><em>(Figure 4.6 — Grafana monitoring dashboard panels)</em></p>
+<table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Metric / Expression</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gateway Request Rate</td>
+<td><code>rate(http_requests_total[1m])</code></td>
+<td>Requests per second through the Express gateway</td>
+</tr>
+<tr>
+<td>Active Connections</td>
+<td><code>nginx_connections_active</code></td>
+<td>Current active connections to the frontend Nginx</td>
+</tr>
+<tr>
+<td>JVM Heap Usage</td>
+<td><code>jvm_memory_used_bytes</code></td>
+<td>Heap memory per Spring Boot service</td>
+</tr>
+<tr>
+<td>Pod CPU Utilization</td>
+<td><code>rate(container_cpu_usage_seconds_total[5m])</code></td>
+<td>CPU utilization per pod</td>
+</tr>
+<tr>
+<td>Simulation Count</td>
+<td><code>twindigital_simulations_total</code></td>
+<td>Cumulative simulations executed</td>
+</tr>
+<tr>
+<td>Cost-Risk API p95</td>
+<td><code>histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))</code></td>
+<td>p95 latency of cost-risk API calls</td>
+</tr>
+<tr>
+<td>Cluster Sync Lag</td>
+<td><code>twindigital_sync_lag_seconds</code></td>
+<td>Time since last successful cluster state sync</td>
+</tr>
+<tr>
+<td>Scrape Health</td>
+<td><code>up{job="twindigital"}</code></td>
+<td>Health status of all Prometheus scrape targets</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Chapter 5: Deployment and Operation</h2>
+<h3>5.1 Project Directory Structure</h3>
+<pre><code>cloudca/
+├── infra/              Terraform: Multi-AZ VPC, EKS, RDS, ElastiCache, IAM, ECR
+├── services/
+│   ├── auth-service/           BCrypt, JWT, RBAC, Redis refresh tokens
+│   ├── cluster-sync-service/   Kubernetes informers, Flyway, heartbeats
+│   ├── topology-service/       Directed graph, in-memory BFS blast radius
+│   ├── simulation-service/     5-check what-if engine, cost delta, audit log
+│   └── cost-risk-service/      PromQL p95 right-sizing, AWS Cost Explorer
+├── gateway/            Express gateway: JWT, RBAC, rate limiting, prom-client
+├── frontend/           React 19 + Vite + ReactFlow + TypeScript
+├── k8s/                Kustomize manifests: base, staging overlay, prod overlay
+├── ci/                 Jenkins agent Dockerfile, Helm values, registry guide
+├── docs/               ADRs, testing scripts, demo script, results template
+├── Jenkinsfile         9-stage DevSecOps pipeline
+├── docker-compose.yml  Local development orchestrator (9 services)
+└── LICENSE             Apache 2.0
+</code></pre>
+<h3>5.2 Local Deployment Procedure</h3>
+<ol>
+<li>Install Docker Desktop (or Docker Engine) and ensure it is running.</li>
+<li>Clone the repository and navigate to the project root.</li>
+<li>Copy <code>.env.example</code> to <code>.env</code> and set a unique value for every <code>CHANGE_ME</code> placeholder:
+   <code>POSTGRES_PASSWORD=&lt;strong-password&gt;
+   REDIS_PASSWORD=&lt;strong-password&gt;
+   JWT_SECRET=&lt;min-32-char-secret&gt;
+   BOOTSTRAP_ADMIN_PASSWORD=&lt;admin-password&gt;</code></li>
+<li>Validate the Compose configuration with <code>docker compose config</code>.</li>
+<li>Build and start the complete local MVP stack with <code>docker compose up --build -d</code>.</li>
+<li>Wait for all nine services to report healthy with <code>docker compose ps</code>.</li>
+<li>Open the frontend at <code>http://localhost:8088</code>; the gateway API is at <code>http://localhost:3000</code>.</li>
+</ol>
+<blockquote>
+<p><strong>DATA NOTE:</strong> Without <code>KUBECONFIG_BASE64</code> in <code>.env</code>, cluster-sync cannot connect to a live Kubernetes cluster and topology returns the built-in seeded demo graph. This is the expected behavior for local development.</p>
+</blockquote>
+<h3>5.3 Common Operational Commands</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Validate Compose configuration</td>
+<td><code>docker compose config</code></td>
+</tr>
+<tr>
+<td>Build and start all services</td>
+<td><code>docker compose up --build -d</code></td>
+</tr>
+<tr>
+<td>View all service statuses</td>
+<td><code>docker compose ps</code></td>
+</tr>
+<tr>
+<td>View service logs</td>
+<td><code>docker compose logs -f &lt;service-name&gt;</code></td>
+</tr>
+<tr>
+<td>Stop all services</td>
+<td><code>docker compose down</code></td>
+</tr>
+<tr>
+<td>Stop and remove all data volumes</td>
+<td><code>docker compose down -v</code></td>
+</tr>
+<tr>
+<td>Test gateway login</td>
+<td><code>curl -sS -X POST http://localhost:3000/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"&lt;password&gt;"}'</code></td>
+</tr>
+<tr>
+<td>Test topology API</td>
+<td><code>curl -sS http://localhost:3000/api/v1/topology -H "Authorization: Bearer &lt;accessToken&gt;"</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>WARNING:</strong> <code>docker compose down -v</code> permanently deletes the <code>postgres_data</code> and <code>redis_data</code> named volumes, removing all cluster snapshots, simulation audit logs, and cached tokens. Use <code>docker compose down</code> without <code>-v</code> to retain monitoring history.</p>
+</blockquote>
+<h3>5.4 Cloud Deployment on Amazon EKS</h3>
+<p>Ensure <code>kubectl</code> is authenticated to your target EKS cluster and Terraform has been applied to provision the VPC, EKS cluster, RDS PostgreSQL, ElastiCache Redis, and ECR repositories.</p>
+<pre><code class="language-bash"># 1. Preview rendered staging manifests
+kubectl kustomize k8s/overlays/staging
+
+# 2. Apply to EKS cluster
+kubectl apply -k k8s/overlays/staging
+
+# 3. Verify deployments, services, HPAs, and ingress
+kubectl get pods,svc,hpa,ingress -n twindigital-staging
+</code></pre>
+<p>The current package contains the deployment instructions and Compose configuration; a live cloud deployment should be verified separately in the target AWS account with valid IRSA credentials, a configured EKS cluster, and a running Prometheus instance.</p>
+<hr />
+<h2>Chapter 6: Testing and Validation</h2>
+<h3>Functional Verification of the Delivered Implementation</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Test Action</th>
+<th>Expected Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T-01</td>
+<td>Run <code>docker compose up -d</code> and check <code>docker compose ps</code></td>
+<td>All 9 services report <code>healthy</code></td>
+<td>Verified locally on 2026-11-23: all 9 services healthy (frontend :8088, gateway :3000, auth :8081, cluster-sync :8082, topology :8083, simulation :8084, cost-risk :8085, postgres :5432, redis :6379)</td>
+</tr>
+<tr>
+<td>T-02</td>
+<td>POST login credentials to <code>http://localhost:3000/api/v1/auth/login</code></td>
+<td>HTTP 200; response contains <code>accessToken</code> and <code>role: ADMIN</code></td>
+<td>Verified locally on 2026-11-01</td>
+</tr>
+<tr>
+<td>T-03</td>
+<td>GET topology with valid ADMIN JWT</td>
+<td>HTTP 200; response contains <code>dataSource: SEED</code>, 18 nodes, 19 edges</td>
+<td>Verified locally on 2026-11-01</td>
+</tr>
+<tr>
+<td>T-04</td>
+<td>GET topology with VIEWER JWT; POST to <code>/simulate</code> with VIEWER JWT</td>
+<td>Topology: HTTP 200; Simulate: HTTP 403 (RBAC enforced)</td>
+<td>Covered by 17/17 Gateway Jest tests</td>
+</tr>
+<tr>
+<td>T-05</td>
+<td>GET topology with invalid or expired JWT</td>
+<td>HTTP 401 Unauthorized</td>
+<td>Covered by 17/17 Gateway Jest tests</td>
+</tr>
+<tr>
+<td>T-06</td>
+<td>Inspect cluster-sync health endpoint</td>
+<td>HTTP 200; <code>status: NO_CLUSTER</code> (no kubeconfig set)</td>
+<td>Verified locally on 2026-11-02</td>
+</tr>
+<tr>
+<td>T-07</td>
+<td>POST simulation request with valid ADMIN JWT</td>
+<td>HTTP 200; response contains five check results and cost delta</td>
+<td>Covered by 25/25 simulation-service tests</td>
+</tr>
+<tr>
+<td>T-08</td>
+<td>Run <code>mvn clean test -B</code> in each Java service directory</td>
+<td>All 92 Java tests pass (19 + 25 + 8 + 25 + 15)</td>
+<td>Verified locally on 2026-11-01 / 2026-11-02</td>
+</tr>
+<tr>
+<td>T-09</td>
+<td>Run <code>npm test</code> in the gateway directory</td>
+<td>All 17 Jest tests pass</td>
+<td>Verified locally on 2026-11-01</td>
+</tr>
+<tr>
+<td>T-10</td>
+<td>Run <code>npm run lint &amp;&amp; npm run typecheck &amp;&amp; npm run build</code> in frontend</td>
+<td>0 errors, 3 warnings; production build succeeds</td>
+<td>Verified locally on 2026-11-02</td>
+</tr>
+</tbody>
+</table>
+<p><em>(Figure 6.1 — Docker Compose service health verification)</em><br />
+<em>(Figure 6.2 — Gateway login and topology API response)</em></p>
+<h3>Test Suite Coverage Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Test Suite</th>
+<th>Tests</th>
+<th>Passed</th>
+<th>Run Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gateway Jest</strong></td>
+<td>17</td>
+<td>17 (100%)</td>
+<td>2026-11-01</td>
+</tr>
+<tr>
+<td><strong>auth-service</strong></td>
+<td>19</td>
+<td>19 (100%)</td>
+<td>2026-11-02</td>
+</tr>
+<tr>
+<td><strong>cluster-sync-service</strong></td>
+<td>25</td>
+<td>25 (100%)</td>
+<td>2026-11-01</td>
+</tr>
+<tr>
+<td><strong>topology-service</strong></td>
+<td>8</td>
+<td>8 (100%)</td>
+<td>2026-11-02</td>
+</tr>
+<tr>
+<td><strong>simulation-service</strong></td>
+<td>25</td>
+<td>25 (100%)</td>
+<td>2026-11-02</td>
+</tr>
+<tr>
+<td><strong>cost-risk-service</strong></td>
+<td>15</td>
+<td>15 (100%)</td>
+<td>2026-11-02</td>
+</tr>
+<tr>
+<td><strong>Frontend TypeScript &amp; Lint</strong></td>
+<td>—</td>
+<td>0 errors, 3 warnings</td>
+<td>2026-11-02</td>
+</tr>
+<tr>
+<td><strong>TOTAL</strong></td>
+<td><strong>109</strong></td>
+<td><strong>109 (100%)</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3>SLA and Performance Threshold Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target SLA</th>
+<th>Measured Value</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All unit tests</td>
+<td>100% passing</td>
+<td>109 / 109 passed</td>
+<td><strong>MET</strong></td>
+</tr>
+<tr>
+<td>Frontend TypeScript</td>
+<td>0 errors</td>
+<td>0 errors, 3 warnings</td>
+<td><strong>MET</strong></td>
+</tr>
+<tr>
+<td>API Gateway p95 Latency</td>
+<td>&lt; 300 ms</td>
+<td><em>not yet run</em></td>
+<td>not yet run</td>
+</tr>
+<tr>
+<td>API Gateway p99 Latency</td>
+<td>&lt; 800 ms</td>
+<td><em>not yet run</em></td>
+<td>not yet run</td>
+</tr>
+<tr>
+<td>Gateway Error Rate under Stress</td>
+<td>&lt; 1.0%</td>
+<td><em>not yet run</em></td>
+<td>not yet run</td>
+</tr>
+<tr>
+<td>Pod Recovery Time on Pod Kill</td>
+<td>&lt; 30 seconds</td>
+<td><em>not yet run</em></td>
+<td>not yet run</td>
+</tr>
+<tr>
+<td>Informer Reconnect after Partition</td>
+<td>&lt; 15 seconds</td>
+<td><em>not yet run</em></td>
+<td>not yet run</td>
+</tr>
+<tr>
+<td>Simulation Risk Prediction Accuracy</td>
+<td>≥ 90.0%</td>
+<td><em>not yet run</em></td>
+<td>not yet run</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Chapter 7: Security, Reliability and Maintenance</h2>
+<h3>7.1 Implemented Security Controls</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JWT authentication</td>
+<td>All protected API routes validate HS256 signed tokens issued by auth-service; expired and forged tokens rejected with HTTP 401</td>
+</tr>
+<tr>
+<td>Role-based access control</td>
+<td><code>ADMIN</code> role required for <code>/simulate</code> endpoints; <code>VIEWER</code> receives HTTP 403; enforced at the gateway layer</td>
+</tr>
+<tr>
+<td>BCrypt password hashing</td>
+<td>User passwords are hashed with BCrypt before storage; plain text is never persisted</td>
+</tr>
+<tr>
+<td>Redis refresh token rotation</td>
+<td>Refresh tokens stored with TTL; revoked tokens cannot be reused</td>
+</tr>
+<tr>
+<td>Redis rate limiting</td>
+<td>60 req/min per IP, 120 req/min per authenticated user; in-memory fallback prevents Redis outage from dropping all rate-limiting</td>
+</tr>
+<tr>
+<td>Trivy container scanning</td>
+<td>CI pipeline fails on any CRITICAL unfixed CVE detected in any of the 7 container images</td>
+</tr>
+<tr>
+<td>SonarQube SAST</td>
+<td>Quality gate fails build on code smells, security hotspots, and coverage regressions across all 5 services</td>
+</tr>
+<tr>
+<td>OWASP Dependency-Check</td>
+<td>Third-party Maven dependencies scanned for CVEs with CVSS ≥ 7.0 threshold; build fails on violation</td>
+</tr>
+<tr>
+<td>OWASP ZAP DAST</td>
+<td>Baseline dynamic scan executed against staging in advisory mode; HTML/JSON reports archived</td>
+</tr>
+<tr>
+<td>Non-root containers</td>
+<td>All Dockerfiles use unprivileged user contexts in the final image stage</td>
+</tr>
+<tr>
+<td>Multi-stage Docker builds</td>
+<td>Final images are minimal — no build tools, Maven cache, or Node modules in production images</td>
+</tr>
+<tr>
+<td>IRSA tokenless AWS access</td>
+<td>AWS API calls use OIDC-federated IAM roles — no static AWS credentials in pods or CI</td>
+</tr>
+<tr>
+<td>Amazon ECR</td>
+<td>Private container registry with IRSA tokenless push — no Docker Hub credentials required</td>
+</tr>
+<tr>
+<td>NetworkPolicies</td>
+<td>Service-to-service traffic restricted to required communication paths in Kubernetes</td>
+</tr>
+<tr>
+<td>Pod Security Contexts</td>
+<td><code>runAsNonRoot: true</code>, <code>readOnlyRootFilesystem: true</code> configured in Kubernetes manifests</td>
+</tr>
+<tr>
+<td>External Secrets</td>
+<td>AWS Secrets Manager secrets injected into pods at runtime; no secrets committed to Git</td>
+</tr>
+</tbody>
+</table>
+<h3>7.2 Operational Security Recommendations</h3>
+<ul>
+<li>Replace all <code>.env</code> placeholder values with strong, unique secrets before starting Compose; store the real <code>.env</code> file outside source control. Only <code>.env.example</code> with placeholders should be committed.</li>
+<li>For cloud deployment, restrict inbound ports to trusted administrator IP addresses using AWS Security Groups. Do not expose internal service ports (8081–8085) publicly.</li>
+<li>Use HTTPS termination at the AWS ALB or Nginx Ingress Controller before exposing the gateway to external users.</li>
+<li>Update container images deliberately and review Trivy scan results before each production release.</li>
+<li>Back up PostgreSQL and Redis named volumes regularly when cluster snapshot history and simulation audit logs must be retained.</li>
+<li>Rotate JWT secrets and refresh token signing keys on a regular schedule and after any suspected credential compromise.</li>
+</ul>
+<h3>7.3 Reliability Design</h3>
+<ul>
+<li>All nine Compose services use <code>restart: unless-stopped</code> to automatically recover from unexpected crashes.</li>
+<li>Spring Boot Actuator <code>/actuator/health</code> endpoints are used as Docker Compose health probes with 15-second intervals and 5 retries.</li>
+<li>The cluster-sync-service marks its status as <code>STALE</code> and auto-reconnects using exponential backoff if the Kubernetes Watch stream drops.</li>
+<li>The gateway's Redis rate-limit store uses <code>passOnStoreError: true</code> to fall back to in-memory limiting during Redis outages — verified by Jest tests.</li>
+<li>The Jenkins CI pipeline enforces <code>kubectl rollout undo</code> automatic rollback if any service deployment times out during the EKS rollout stage.</li>
+</ul>
+<hr />
+<h2>Chapter 8: Scope Boundaries and Future Enhancements</h2>
+<h3>8.1 Current Implementation Boundaries</h3>
+<p>The delivered package is a full-stack microservices platform with live Kubernetes state synchronization, topology visualization, five-check simulation, and DevSecOps CI/CD. The local Compose stack does not provision a live Kubernetes cluster, Prometheus server, or AWS Cost Explorer credentials. The topology returned by the local stack is the built-in seeded demo graph (<code>dataSource: SEED</code> with 18 nodes and 19 edges), not a live cluster snapshot.</p>
+<p>The load testing script (<code>k6-gateway-stress.js</code>), chaos engineering scenarios (<code>chaos-scenarios.sh</code>), and simulation accuracy harness (<code>simulation-accuracy-harness.py</code>) are defined and ready to run but have not yet been executed against a live cluster. Their results are marked <strong>not yet run</strong> in the testing results matrix. The chaos engineering and accuracy scenarios are planned for execution after a live EKS cluster is provisioned.</p>
+<p>The platform currently synchronizes and simulates changes within a single EKS cluster per deployment instance. Multi-cluster federation, real-time WebSocket push, and eBPF-based service mesh tracing are proposed as future extensions.</p>
+<h3>8.2 Recommended Enhancement Roadmap</h3>
+<table>
+<thead>
+<tr>
+<th>Enhancement</th>
+<th>Proposed Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Live cluster validation</strong></td>
+<td>Run k6 load test to 1,000 req/s, 6 chaos scenarios, and 10 simulation accuracy scenarios against a provisioned kind or EKS cluster</td>
+</tr>
+<tr>
+<td><strong>Multi-cluster fleet federation</strong></td>
+<td>Extend cluster-sync and topology-service to ingest and correlate state from multiple EKS clusters across regions</td>
+</tr>
+<tr>
+<td><strong>eBPF-powered service mesh tracing</strong></td>
+<td>Integrate Cilium/Tetragon eBPF probes to auto-discover runtime network dependencies without Kubernetes annotation requirements</td>
+</tr>
+<tr>
+<td><strong>GitOps PR generation</strong></td>
+<td>Add a one-click "Apply Right-Sizing" button that opens an automated GitHub Pull Request updating Helm/Kustomize resource values</td>
+</tr>
+<tr>
+<td><strong>Karpenter disruption simulation</strong></td>
+<td>Model Karpenter node consolidation and disruption decisions directly in the what-if simulation engine</td>
+</tr>
+<tr>
+<td><strong>WebSocket push</strong></td>
+<td>Replace 5-second REST polling with server-sent events or WebSocket connections for real-time topology updates</td>
+</tr>
+<tr>
+<td><strong>Persistent incident database</strong></td>
+<td>Add a backend event-ingestion API to persist and query security events detected by the cluster monitoring pipeline</td>
+</tr>
+<tr>
+<td><strong>Alerting rules</strong></td>
+<td>Define Prometheus Alertmanager rules for PodFrequentRestarts, cluster-sync STALE, and gateway error rate threshold breaches</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>ENGINEERING PRIORITY:</strong> The highest-value next step is to execute the existing load, chaos, and simulation accuracy test suites against a live EKS cluster to validate the platform's performance SLAs and simulation prediction accuracy targets.</p>
+</blockquote>
+<hr />
+<h2>Chapter 9: Conclusion</h2>
+<h3>Summary of the TwinDigital Implementation</h3>
+<p>TwinDigital brings together a live Kubernetes cluster mirror, an interactive topology graph, a five-check what-if simulation engine, and an integrated DevSecOps CI/CD pipeline. The cluster-sync-service uses <code>SharedIndexInformer</code> to receive real-time Kubernetes events with minimal API server overhead, persisting resource changes to PostgreSQL. The topology-service builds an in-memory directed graph from those snapshots and executes dual-queue BFS traversal for blast-radius requests in sub-millisecond time for typical cluster sizes.</p>
+<p>The Docker Compose package defines nine services, their health-check probes, service dependencies, restart policies, and named data volumes. The Express gateway enforces JWT-based RBAC and Redis-backed rate limiting. The Jenkins pipeline covers all five Java microservices and both the gateway and frontend, applying SAST, SCA, container scanning, and DAST security gates before any image reaches production.</p>
+<p>The delivered implementation therefore establishes a production-grade Kubernetes operations foundation for TwinDigital and provides a structured operator interface for topology, simulation, and cost-risk workflows. It also delivers an organized CI/CD and infrastructure-as-code path that can be extended with live cluster validation, multi-cluster federation, and eBPF-based dependency discovery.</p>
+<h3>Project Outcomes</h3>
+<ul>
+<li>A React 19 SPA with an interactive DAG canvas, role-aware navigation, and a five-section operator interface.</li>
+<li>A nine-service Docker Compose architecture verified locally with all services reaching <code>healthy</code> on 2026-11-23.</li>
+<li>A <code>SharedIndexInformer</code>-based cluster state pipeline with staleness detection and auto-reconnect.</li>
+<li>An in-memory BFS topology graph with blast-radius traversal supporting sub-millisecond queries.</li>
+<li>A five-check what-if simulation engine with cost delta integration and PostgreSQL audit logging.</li>
+<li>A Prometheus PromQL and AWS Cost Explorer cost-risk service with Caffeine caching.</li>
+<li>109 / 109 automated tests passing at 100% (92 Java + 17 Jest).</li>
+<li>A 9-stage Jenkins DevSecOps pipeline with IRSA ECR push, blocking SAST/SCA/container security gates, and automatic rollback.</li>
+<li>Terraform IaC provisioning for Multi-AZ VPC, EKS, RDS, ElastiCache, ECR, and IRSA in <code>ap-south-1</code>.</li>
+<li>Four documented Architecture Decision Records covering Terraform, Kubernetes Informers, PostgreSQL, and Amazon ECR.</li>
+</ul>
+<h3>Final Statement</h3>
+<p>The current release establishes the synchronization, simulation, and observability core of TwinDigital. The system architecture is modular, the service configuration is reproducible, and the CI/CD pipeline enforces security at every stage. The proposed extensions provide a clear path toward a live-validated, multi-cluster Kubernetes digital twin platform suitable for production SRE operations.</p>
+<hr />
+<h2>References and Appendices</h2>
+<h3>References</h3>
+<ul>
+<li>[1] Kubernetes Documentation, "Informers and Controllers." https://kubernetes.io/docs/concepts/architecture/controller/</li>
+<li>[2] Kubernetes Java Client, "SharedInformerFactory." https://github.com/kubernetes-client/java</li>
+<li>[3] Spring Boot 3.3 Reference Documentation. https://docs.spring.io/spring-boot/docs/3.3.x/reference/html/</li>
+<li>[4] React Documentation. https://react.dev/</li>
+<li>[5] ReactFlow — Interactive Graph Library. https://reactflow.dev/</li>
+<li>[6] Docker Documentation, "Docker Compose overview." https://docs.docker.com/compose/</li>
+<li>[7] HashiCorp Terraform AWS Provider. https://registry.terraform.io/providers/hashicorp/aws</li>
+<li>[8] Amazon EKS Documentation — IRSA. https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html</li>
+<li>[9] Amazon ECR Documentation. https://docs.aws.amazon.com/ecr/</li>
+<li>[10] Prometheus Documentation, "Querying basics." https://prometheus.io/docs/prometheus/latest/querying/basics/</li>
+<li>[11] Grafana Documentation, "Provisioning." https://grafana.com/docs/grafana/latest/administration/provisioning/</li>
+<li>[12] OWASP Dependency-Check. https://owasp.org/www-project-dependency-check/</li>
+<li>[13] Trivy Container Scanning. https://aquasecurity.github.io/trivy/</li>
+<li>[14] SonarQube Documentation. https://docs.sonarsource.com/sonarqube/</li>
+<li>[15] Flyway Database Migrations. https://flywaydb.org/documentation/</li>
+<li>[16] kube-prometheus-stack Helm Chart. https://github.com/prometheus-community/helm-charts</li>
+<li>[17] k6 Load Testing Documentation. https://k6.io/docs/</li>
+<li>[18] TwinDigital project package: README.md, docker-compose.yml, Jenkinsfile, Terraform modules, Kustomize manifests, and service source code.</li>
+</ul>
+<hr />
+<p><em>Report submitted by Gona Navya Ramani | Registration: 12300802 | Section: K402311 | INT378 — Advancements in Cloud and DevOps | Lovely Professional University | November 2026</em></p>
+</body>
+</html>
