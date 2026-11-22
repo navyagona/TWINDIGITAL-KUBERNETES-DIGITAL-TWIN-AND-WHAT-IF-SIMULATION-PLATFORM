@@ -3,7 +3,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn -q dependency:go-offline -B
 COPY src ./src
-RUN mvn -q package -DskipTests -B
+RUN mvn clean package -DskipTests -B
 
 FROM eclipse-temurin:17-jre-alpine AS runtime
 LABEL maintainer="twindigital-team" service="cost-risk-service"
